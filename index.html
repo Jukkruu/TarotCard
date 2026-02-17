@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mystic Tarot Suite</title>
+    <style>
+        :root {
+            --bg-color: #0d0411;
+            --text-color: #fcebd5;
+            --accent-gold: #d4af37;
+            /* Metallic Gold */
+            --accent-silver: #c0c0c0;
+            --card-glow: 0 0 15px rgba(212, 175, 55, 0.3);
+            --card-bg: #1a0b2e;
+        }
+
+        body {
+            font-family: 'Cinzel', serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 50%, #200835 0%, #0d0411 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital@0;1&display=swap');
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 2rem 1rem 1rem;
+            width: 100%;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            color: var(--accent-gold);
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+            margin: 0;
+            font-size: 2.8rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 1.1rem;
+            color: #aaa;
+            margin-top: 0.5rem;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        button {
+            background: rgba(20, 5, 30, 0.8);
+            color: var(--accent-gold);
+            border: 1px solid var(--accent-gold);
+            padding: 12px 30px;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border-radius: 2px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--accent-gold);
+            color: #000;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: #555;
+            color: #888;
+        }
+
+        #status-message {
+            min-height: 24px;
+            color: var(--accent-silver);
+            margin-bottom: 2rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem;
+            text-align: center;
+            opacity: 0.9;
+        }
+
+        /* Spread Container */
+        #spread-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 25px;
+            width: 95%;
+            max-width: 1400px;
+            padding: 20px;
+            perspective: 1000px;
+        }
+
+        /* Card Component */
+        .tarot-card {
+            width: 220px;
+            background: var(--card-bg);
+            border: 2px solid var(--accent-gold);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 0, 0, 0.8);
+            animation: dealCard 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+            opacity: 0;
+            transform: translateY(30px) scale(0.9);
+            transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
+            position: relative;
+        }
+
+        .tarot-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), var(--card-glow);
+            border-color: #fff;
+            z-index: 5;
+        }
+
+        /* Inner decorative border */
+        .tarot-card::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        .card-image-container {
+            width: 100%;
+            height: 350px;
+            background-color: #111;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .tarot-card:hover .card-image-container img {
+            transform: scale(1.08);
+            /* Gentle zoom */
+        }
+
+        /* Fallback for broken images */
+        .card-image-fallback {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: repeating-linear-gradient(45deg,
+                    #1a0b2e,
+                    #1a0b2e 10px,
+                    #230f3d 10px,
+                    #230f3d 20px);
+            color: var(--accent-gold);
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 10px;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+
+        .card-image-container.error .card-image-fallback {
+            display: flex;
+        }
+
+        .card-image-container.error img {
+            display: none;
+        }
+
+        .fallback-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        .card-details {
+            padding: 15px;
+            text-align: center;
+            background: linear-gradient(to top, #150826, #1a0b2e);
+            border-top: 1px solid var(--accent-gold);
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .card-name {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            color: var(--accent-gold);
+            margin-bottom: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card-meaning {
+            font-family: 'Playfair Display', serif;
+            font-size: 0.9rem;
+            color: #dcdcdc;
+            line-height: 1.4;
+            font-style: italic;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 8px;
+            margin-top: 5px;
+        }
+
+        /* Animations */
+        @keyframes dealCard {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes shakeCanvas {
+            0% {
+                transform: translate(0, 0) rotate(0);
+            }
+
+            10% {
+                transform: translate(-5px, -2px) rotate(-1deg);
+            }
+
+            20% {
+                transform: translate(5px, 2px) rotate(1deg);
+            }
+
+            30% {
+                transform: translate(-5px, 2px) rotate(1deg);
+            }
+
+            40% {
+                transform: translate(5px, -2px) rotate(-1deg);
+            }
+
+            50% {
+                transform: translate(-3px, 1px) rotate(0);
+            }
+
+            100% {
+                transform: translate(0, 0) rotate(0);
+            }
+        }
+
+        .shuffling {
+            animation: shakeCanvas 0.8s ease-in-out;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .tarot-card {
+                width: 45%;
+                /* 2 per row */
+            }
+
+            .card-image-container {
+                height: 200px;
+                /* Smaller images */
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            #spread-container {
+                gap: 15px;
+                padding: 10px;
+            }
+
+            .card-name {
+                font-size: 0.9rem;
+            }
+
+            .card-meaning {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Mystic Tarot</h1>
+        <div class="subtitle">Unveil the wisdom of the Arcana</div>
+    </header>
+
+    <div id="status-message">The deck is shuffled and waiting.</div>
+
+    <div class="controls">
+        <button id="btn-draw" onclick="drawCard()">Draw Card</button>
+        <button id="btn-shuffle" onclick="shuffleDeck()">Shuffle Deck</button>
+        <button id="btn-reset" onclick="resetSpread()">Clear Spread</button>
+    </div>
+
+    <div id="spread-container">
+        <!-- Cards will appear here -->
+    </div>
+
+    <script>
+        // --- Data: Full Tarot Deck (78 Cards) ---
+        // Source: https://www.sacred-texts.com/tarot/pkt/img/{code}.jpg
+
+        // Majors: ar00 - ar21
+        const majorArcana = [
+            { code: 'ar00', name: "The Fool", meaning: "Beginnings, innocence, spontaneity, free spirit" },
+            { code: 'ar01', name: "The Magician", meaning: "Manifestation, resourcefulness, power, inspired action" },
+            { code: 'ar02', name: "The High Priestess", meaning: "Intuition, sacred knowledge, divine feminine, subconscious" },
+            { code: 'ar03', name: "The Empress", meaning: "Femininity, beauty, nature, nurturing, abundance" },
+            { code: 'ar04', name: "The Emperor", meaning: "Authority, establishment, structure, father figure" },
+            { code: 'ar05', name: "The Hierophant", meaning: "Spiritual wisdom, religious beliefs, conformity, tradition" },
+            { code: 'ar06', name: "The Lovers", meaning: "Love, harmony, relationships, values alignment" },
+            { code: 'ar07', name: "The Chariot", meaning: "Control, willpower, success, action, determination" },
+            { code: 'ar08', name: "Strength", meaning: "Strength, courage, persuasion, influence, compassion" },
+            { code: 'ar09', name: "The Hermit", meaning: "Soul-searching, introspection, being alone, inner guidance" },
+            { code: 'ar10', name: "Wheel of Fortune", meaning: "Good luck, karma, life cycles, destiny, a turning point" },
+            { code: 'ar11', name: "Justice", meaning: "Justice, fairness, truth, cause and effect, law" },
+            { code: 'ar12', name: "The Hanged Man", meaning: "Pause, surrender, letting go, new perspectives" },
+            { code: 'ar13', name: "Death", meaning: "Endings, change, transformation, transition" },
+            { code: 'ar14', name: "Temperance", meaning: "Balance, moderation, patience, purpose" },
+            { code: 'ar15', name: "The Devil", meaning: "Shadow self, attachment, addiction, restriction, sexuality" },
+            { code: 'ar16', name: "The Tower", meaning: "Sudden change, upheaval, chaos, revelation, awakening" },
+            { code: 'ar17', name: "The Star", meaning: "Hope, faith, purpose, renewal, spirituality" },
+            { code: 'ar18', name: "The Moon", meaning: "Illusion, fear, anxiety, subconscious, intuition" },
+            { code: 'ar19', name: "The Sun", meaning: "Positivity, fun, warmth, success, vitality" },
+            { code: 'ar20', name: "Judgement", meaning: "Judgement, rebirth, inner calling, absolution" },
+            { code: 'ar21', name: "The World", meaning: "Completion, integration, accomplishment, travel" }
+        ];
+
+        const suits = [
+            { name: 'Wands', codePrefix: 'wa', meaningKey: 'Energy, passion' },
+            { name: 'Cups', codePrefix: 'cu', meaningKey: 'Emotion, intuition' },
+            { name: 'Swords', codePrefix: 'sw', meaningKey: 'Intellect, conflict' },
+            { name: 'Pentacles', codePrefix: 'pe', meaningKey: 'Material, work' }
+        ];
+
+        // Corrected Ranks for image mapping
+        // Ace-10 = 01-10
+        // Page = pa, Knight = kn, Queen = qu, King = ki
+        const ranks = [
+            { name: 'Ace', suffix: '01', keyword: 'New beginnings' },
+            { name: 'Two', suffix: '02', keyword: 'Balance, decisions' },
+            { name: 'Three', suffix: '03', keyword: 'Collaboration' },
+            { name: 'Four', suffix: '04', keyword: 'Stability' },
+            { name: 'Five', suffix: '05', keyword: 'Conflict, loss' },
+            { name: 'Six', suffix: '06', keyword: 'Victory' },
+            { name: 'Seven', suffix: '07', keyword: 'Perseverance' },
+            { name: 'Eight', suffix: '08', keyword: 'Action, speed' },
+            { name: 'Nine', suffix: '09', keyword: 'Resilience' },
+            { name: 'Ten', suffix: '10', keyword: 'Completion' },
+            { name: 'Page', suffix: 'pa', keyword: 'New ideas, messages' },
+            { name: 'Knight', suffix: 'kn', keyword: 'Action, pursuit' },
+            { name: 'Queen', suffix: 'qu', keyword: 'Nurturing, mastery' },
+            { name: 'King', suffix: 'ki', keyword: 'Authority, leadership' }
+        ];
+
+        function generateMinorArcana() {
+            let cards = [];
+            suits.forEach(suit => {
+                ranks.forEach(rank => {
+                    cards.push({
+                        code: `${suit.codePrefix}${rank.suffix}`,
+                        name: `${rank.name} of ${suit.name}`,
+                        meaning: `${rank.keyword} in ${suit.meaningKey}`
+                    });
+                });
+            });
+            return cards;
+        }
+
+        let fullDeck = [...majorArcana, ...generateMinorArcana()];
+        let currentDeck = [...fullDeck];
+
+        // --- State ---
+        const spreadContainer = document.getElementById('spread-container');
+        const statusMsg = document.getElementById('status-message');
+        const btnDraw = document.getElementById('btn-draw');
+
+        // --- Logic ---
+
+        function fyShuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function shuffleDeck() {
+            // Visual shake on container
+            spreadContainer.classList.add('shuffling');
+            statusMsg.textContent = "Reshuffling the energies...";
+
+            setTimeout(() => {
+                resetSpread(false);
+                currentDeck = [...fullDeck];
+                fyShuffle(currentDeck);
+                spreadContainer.classList.remove('shuffling');
+                statusMsg.textContent = "Deck refreshed. Ready to draw.";
+            }, 800);
+        }
+
+        function drawCard() {
+            if (currentDeck.length === 0) {
+                statusMsg.textContent = "The deck has been fully drawn! Please shuffle.";
+                return;
+            }
+
+            const cardData = currentDeck.shift(); // Remove top card
+            renderCard(cardData);
+
+            statusMsg.textContent = `You drew: ${cardData.name}`;
+        }
+
+        function renderCard(card) {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'tarot-card';
+
+            const imgUrl = `https://www.sacred-texts.com/tarot/pkt/img/${card.code}.jpg`;
+
+            cardEl.innerHTML = `
+            <div class="card-image-container">
+                <img src="${imgUrl}" alt="${card.name}" onerror="this.parentElement.classList.add('error')">
+                <div class="card-image-fallback">
+                    <div class="fallback-icon">✦</div>
+                    <div>${card.name}</div>
+                </div>
+            </div>
+            <div class="card-details">
+                <div class="card-name">${card.name}</div>
+                <div class="card-meaning">"${card.meaning}"</div>
+            </div>
+        `;
+
+            spreadContainer.appendChild(cardEl);
+
+            // Ensure visible
+            // window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            cardEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        function resetSpread(updateText = true) {
+            spreadContainer.innerHTML = '';
+            if (updateText) statusMsg.textContent = "Spread cleared.";
+        }
+
+        // Init with a shuffle
+        fyShuffle(currentDeck);
+
+    </script>
+</body>
+
+</html>
