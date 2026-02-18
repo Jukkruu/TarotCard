@@ -227,6 +227,15 @@ const App = {
         // --- MAGICAL EFFECTS ---
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
+        // Auto-enable sound on mobile (button is hidden)
+        if (isTouchDevice) {
+            state.soundOn = true;
+            document.body.addEventListener('touchstart', () => {
+                AudioSys.init();
+                AudioSys.updateBgMusic();
+            }, { once: true });
+        }
+
         // 1. Spawn Floating Particles (fewer on mobile)
         const particleBox = document.getElementById('particles-container');
         const particleCount = isTouchDevice ? 15 : 35;

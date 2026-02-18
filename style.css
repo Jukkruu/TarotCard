@@ -989,9 +989,10 @@ textarea.mystic-input {
         height: 100dvh;
     }
 
-    /* Compact Header — leave room for sound btn */
+    /* Compact Header — centered */
     .glass-header {
-        padding: 0.8rem 50px 0.3rem 10px;
+        padding: 0.8rem 10px 0.3rem;
+        text-align: center;
     }
 
     .glowing-text {
