@@ -21,9 +21,17 @@
     <div id="parallax-bg" class="parallax-layer"></div>
     <div id="stars-fg" class="parallax-layer"></div>
 
+    <!-- Floating Magical Particles -->
+    <div id="particles-container" aria-hidden="true"></div>
+
+    <!-- Ambient Vignette Glow -->
+    <div id="vignette-glow" aria-hidden="true"></div>
+
+    <!-- Cursor Glow Trail Canvas -->
+    <canvas id="cursor-glow" aria-hidden="true"></canvas>
+
     <!-- Background Audio -->
     <audio id="bg-music" src="Sound.mp3" loop></audio>
-
 
     <!-- Physics Canvas Container -->
     <div id="physics-container"></div>
@@ -64,8 +72,10 @@
     <!-- History Modal (Glassmorphism) -->
     <div id="history-modal" class="modal">
         <div class="modal-content glass-modal">
-            <button id="close-history" class="close-btn" aria-label="Close History">×</button>
-            <div id="history-title" class="history-title">Session History</div>
+            <div class="history-header">
+                <h2 id="history-title" class="history-title">Session History</h2>
+                <button id="close-history" class="close-btn" aria-label="Close History">×</button>
+            </div>
             <ul id="history-list">
                 <!-- Items injected via JS -->
             </ul>

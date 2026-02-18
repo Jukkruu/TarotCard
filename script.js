@@ -65,15 +65,27 @@ const appData = {
             clearHist: "ล้างประวัติ"
         }
     },
+    // Smart Minor Arcana Meaning Generator
+    getMinorMeaning(rank, suit) {
+        const rankEN = { 'Ace': 'New Beginning', 'Two': 'Balance', 'Three': 'Collaboration', 'Four': 'Stability', 'Five': 'Conflict', 'Six': 'Harmony', 'Seven': 'Reflection', 'Eight': 'Mastery', 'Nine': 'Fulfillment', 'Ten': 'Completion', 'Page': 'Curiosity', 'Knight': 'Action', 'Queen': 'Nurturing', 'King': 'Authority' };
+        const rankTH = { 'Ace': 'การเริ่มต้นใหม่', 'Two': 'ความสมดุล', 'Three': 'ความร่วมมือ', 'Four': 'ความมั่นคง', 'Five': 'ความขัดแย้ง', 'Six': 'ความกลมกลืน', 'Seven': 'การไตร่ตรอง', 'Eight': 'ความชำนาญ', 'Nine': 'ความสมหวัง', 'Ten': 'ความสมบูรณ์', 'Page': 'ความอยากรู้', 'Knight': 'การลงมือทำ', 'Queen': 'การดูแลเอาใจใส่', 'King': 'อำนาจ' };
+        const suitEN = { 'Wands': 'Action & Passion', 'Cups': 'Love & Emotion', 'Swords': 'Intellect & Truth', 'Pentacles': 'Wealth & Material' };
+        const suitTH = { 'Wands': 'การกระทำและแรงบันดาลใจ', 'Cups': 'ความรักและอารมณ์', 'Swords': 'สติปัญญาและความจริง', 'Pentacles': 'ทรัพย์สินและวัตถุ' };
+        return {
+            en: `${rankEN[rank] || rank} in ${suitEN[suit] || suit}`,
+            th: `${rankTH[rank] || rank}ใน${suitTH[suit] || suit}`
+        };
+    },
     generateDeck() {
         let deck = [];
         this.cardsData.majors.forEach(c => deck.push({ ...c, id: c.code, img: `https://www.sacred-texts.com/tarot/pkt/img/${c.code}.jpg`, type: 'Major' }));
         this.cardsData.suits.forEach(s => {
             this.cardsData.ranks.forEach(r => {
+                const meaning = this.getMinorMeaning(r.nEN, s.nameEN);
                 deck.push({
                     id: `${s.code}${r.s}`,
                     nameEN: `${r.nEN} of ${s.nameEN}`, nameTH: `${r.nTH} ${s.nameTH}`,
-                    mEN: `Essence of ${s.nameEN}`, mTH: `พลังแห่ง${s.nameTH}`,
+                    mEN: meaning.en, mTH: meaning.th,
                     img: `https://www.sacred-texts.com/tarot/pkt/img/${s.code}${r.s}.jpg`, type: 'Minor'
                 });
             });
@@ -82,7 +94,7 @@ const appData = {
     }
 };
 
-let state = { lang: 'en', soundOn: false, drawnCards: [], deckBodies: [], drawnBodies: [], bgmPlaying: false };
+let state = { lang: 'en', soundOn: false, drawnCards: [], deckBodies: [], drawnBodies: [], history: [], bgmPlaying: false };
 const fullDeck = appData.generateDeck();
 
 /* --- 2. ADVANCED AUDIO SYSTEM --- */
@@ -209,33 +221,106 @@ const App = {
         // Init Audio Context on any first click to allow Sound.mp3 to play later
         document.body.addEventListener('click', () => {
             AudioSys.init();
-            // If sound is already 'On' in state (via user toggle), try playing again
             if (state.soundOn) AudioSys.updateBgMusic();
         }, { once: true });
+
+        // --- MAGICAL EFFECTS ---
+
+        // 1. Spawn Floating Particles
+        const particleBox = document.getElementById('particles-container');
+        for (let i = 0; i < 35; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            const size = Math.random() * 4 + 1;
+            p.style.cssText = `
+                left: ${Math.random() * 100}%;
+                --size: ${size}px;
+                --dur: ${Math.random() * 10 + 6}s;
+                --delay: ${Math.random() * 10}s;
+                --drift: ${(Math.random() - 0.5) * 80}px;
+                --peak-opacity: ${Math.random() * 0.4 + 0.2};
+            `;
+            particleBox.appendChild(p);
+        }
+
+        // 2. Cursor Glow Trail
+        const glowCanvas = document.getElementById('cursor-glow');
+        const ctx = glowCanvas.getContext('2d');
+        const resizeCanvas = () => { glowCanvas.width = window.innerWidth; glowCanvas.height = window.innerHeight; };
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let mouseTrail = [];
+        document.addEventListener('mousemove', e => {
+            mouseTrail.push({ x: e.clientX, y: e.clientY, age: 0 });
+            if (mouseTrail.length > 20) mouseTrail.shift();
+        });
+
+        const drawGlow = () => {
+            ctx.clearRect(0, 0, glowCanvas.width, glowCanvas.height);
+            mouseTrail.forEach((pt, i) => {
+                pt.age++;
+                const alpha = Math.max(0, 0.15 - pt.age * 0.008);
+                const radius = Math.max(1, 30 - pt.age * 1.2);
+                if (alpha <= 0) return;
+                const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, radius);
+                grad.addColorStop(0, `rgba(212, 175, 55, ${alpha})`);
+                grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            mouseTrail = mouseTrail.filter(pt => pt.age < 20);
+            requestAnimationFrame(drawGlow);
+        };
+        drawGlow();
+
+        // 3. Interactive 3D Card Tilt (event delegation)
+        document.getElementById('reading-overlay').addEventListener('mousemove', e => {
+            const card = e.target.closest('.card-unit');
+            if (!card) return;
+            const rect = card.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width - 0.5;
+            const y = (e.clientY - rect.top) / rect.height - 0.5;
+            card.style.transform = `perspective(800px) rotateY(${x * 12}deg) rotateX(${-y * 10}deg) scale(1.02)`;
+        });
+        document.getElementById('reading-overlay').addEventListener('mouseleave', e => {
+            const card = e.target.closest('.card-unit');
+            if (card) card.style.transform = '';
+        }, true);
     },
 
     setupEvents() {
         document.getElementById('lang-en').onclick = () => this.setLang('en');
         document.getElementById('lang-th').onclick = () => this.setLang('th');
 
-        // Sound Switch
+        // Sound Switch (Glassmorphism button)
         const btnSound = document.getElementById('btn-sound');
         btnSound.onclick = () => {
             const isOn = AudioSys.toggle();
             btnSound.textContent = isOn ? "🔊" : "🔇";
+            btnSound.classList.toggle('sound-on', isOn);
             this.showToast(isOn ? "Sound Enabled" : "Sound Muted");
         };
 
-        // Shuffle with Visual FX
+        // Shuffle with Visual FX (Screen Shake)
         document.getElementById('btn-shuffle').onclick = () => {
             this.showToast(appData.translations[state.lang].msgShuffle);
-            this.actionReset();
+            // Instant clear (no vanish animation for shuffle)
+            state.drawnCards = []; state.drawnBodies = [];
+            document.getElementById('reading-overlay').innerHTML = '';
+            Physics.spawnCards();
             Physics.shakeWorld();
 
-            // Visual Shake FX (Blur)
+            // Visual Shake FX on canvas AND body
             const canvas = document.getElementById('physics-container');
             canvas.classList.add('shake-blur');
-            setTimeout(() => canvas.classList.remove('shake-blur'), 800);
+            document.body.classList.add('shake-blur');
+            setTimeout(() => {
+                canvas.classList.remove('shake-blur');
+                document.body.classList.remove('shake-blur');
+            }, 800);
 
             setTimeout(() => this.showToast(appData.translations[state.lang].msgShuffled), 1000);
 
@@ -316,41 +401,58 @@ const App = {
         // Scroll to new
         el.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'center' });
 
+        // Persist to history (survives reset)
+        state.history.push(cardObj);
+
         AudioSys.playDraw();
     },
 
     actionReset() {
-        state.drawnCards = []; state.drawnBodies = [];
-        document.getElementById('reading-overlay').innerHTML = '';
-        Physics.spawnCards();
+        const cards = document.querySelectorAll('.card-unit');
+        if (cards.length === 0) {
+            // Nothing to animate, just reset physics
+            state.drawnCards = []; state.drawnBodies = [];
+            Physics.spawnCards();
+            return;
+        }
+        // Apply vanishing animation
+        cards.forEach(c => c.classList.add('vanishing'));
         this.showToast(appData.translations[state.lang].msgCleared);
+        // Wait for animation, then clear
+        setTimeout(() => {
+            state.drawnCards = []; state.drawnBodies = [];
+            document.getElementById('reading-overlay').innerHTML = '';
+            Physics.spawnCards();
+        }, 500);
     },
 
     renderHistory() {
         const list = document.getElementById('history-list'); list.innerHTML = '';
-        const titleArea = document.getElementById('history-title');
+        const headerEl = document.querySelector('.history-header');
 
         // Add Clear Button if not there
         let clearBtn = document.getElementById('btn-clear-hist');
-        if (!clearBtn) {
+        if (!clearBtn && headerEl) {
             clearBtn = document.createElement('button');
             clearBtn.id = 'btn-clear-hist';
             clearBtn.className = 'btn-clear-hist';
             clearBtn.textContent = appData.translations[state.lang].clearHist;
-            clearBtn.onclick = () => { state.drawnCards = []; this.renderHistory(); this.actionReset(); };
-            // Insert after title
-            titleArea.parentNode.insertBefore(clearBtn, list);
+            clearBtn.onclick = () => { state.history = []; this.renderHistory(); };
+            headerEl.insertBefore(clearBtn, headerEl.querySelector('.close-btn'));
         }
+        if (clearBtn) clearBtn.textContent = appData.translations[state.lang].clearHist;
 
-        state.drawnCards.forEach((c, i) => {
+        // Use persistent history (survives Reset)
+        state.history.forEach((c, i) => {
             const li = document.createElement('li'); li.className = 'history-item';
             const name = state.lang === 'th' ? c.nameTH : c.nameEN;
             const mean = state.lang === 'th' ? c.mTH : c.mEN;
+            const orientLabel = c.reversed ? (state.lang === 'th' ? 'กลับหัว' : 'Rev') : (state.lang === 'th' ? 'หัวตั้ง' : 'Up');
 
             li.innerHTML = `
                 <img src="${c.img}" class="history-thumb">
                 <div class="history-info">
-                    <span class="history-name">${name}</span>
+                    <span class="history-name">${name} <small style="color:#888;">(${orientLabel})</small></span>
                     <span class="history-meta">${mean}</span>
                 </div>
                 <button class="history-action" title="Copy Card" onclick="App.copyOne(${i})">📋</button>
@@ -360,7 +462,8 @@ const App = {
     },
 
     copyOne(index) {
-        const c = state.drawnCards[index];
+        const c = state.history[index];
+        if (!c) return;
         const txt = `${c.nameEN} (${c.reversed ? 'Rev' : 'Upright'}) - ${c.mEN}`;
         navigator.clipboard.writeText(txt).then(() => this.showToast("Card copied!"));
     },
