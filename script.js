@@ -225,10 +225,12 @@ const App = {
         }, { once: true });
 
         // --- MAGICAL EFFECTS ---
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-        // 1. Spawn Floating Particles
+        // 1. Spawn Floating Particles (fewer on mobile)
         const particleBox = document.getElementById('particles-container');
-        for (let i = 0; i < 35; i++) {
+        const particleCount = isTouchDevice ? 15 : 35;
+        for (let i = 0; i < particleCount; i++) {
             const p = document.createElement('div');
             p.className = 'particle';
             const size = Math.random() * 4 + 1;
@@ -243,52 +245,68 @@ const App = {
             particleBox.appendChild(p);
         }
 
-        // 2. Cursor Glow Trail
-        const glowCanvas = document.getElementById('cursor-glow');
-        const ctx = glowCanvas.getContext('2d');
-        const resizeCanvas = () => { glowCanvas.width = window.innerWidth; glowCanvas.height = window.innerHeight; };
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+        // Desktop-only effects
+        if (!isTouchDevice) {
+            // 2. Cursor Glow Trail
+            const glowCanvas = document.getElementById('cursor-glow');
+            const ctx = glowCanvas.getContext('2d');
+            const resizeCanvas = () => { glowCanvas.width = window.innerWidth; glowCanvas.height = window.innerHeight; };
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
 
-        let mouseTrail = [];
-        document.addEventListener('mousemove', e => {
-            mouseTrail.push({ x: e.clientX, y: e.clientY, age: 0 });
-            if (mouseTrail.length > 20) mouseTrail.shift();
-        });
-
-        const drawGlow = () => {
-            ctx.clearRect(0, 0, glowCanvas.width, glowCanvas.height);
-            mouseTrail.forEach((pt, i) => {
-                pt.age++;
-                const alpha = Math.max(0, 0.15 - pt.age * 0.008);
-                const radius = Math.max(1, 30 - pt.age * 1.2);
-                if (alpha <= 0) return;
-                const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, radius);
-                grad.addColorStop(0, `rgba(212, 175, 55, ${alpha})`);
-                grad.addColorStop(1, 'transparent');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
-                ctx.fill();
+            let mouseTrail = [];
+            document.addEventListener('mousemove', e => {
+                mouseTrail.push({ x: e.clientX, y: e.clientY, age: 0 });
+                if (mouseTrail.length > 20) mouseTrail.shift();
             });
-            mouseTrail = mouseTrail.filter(pt => pt.age < 20);
-            requestAnimationFrame(drawGlow);
-        };
-        drawGlow();
 
-        // 3. Interactive 3D Card Tilt (event delegation)
-        document.getElementById('reading-overlay').addEventListener('mousemove', e => {
-            const card = e.target.closest('.card-unit');
-            if (!card) return;
-            const rect = card.getBoundingClientRect();
-            const x = (e.clientX - rect.left) / rect.width - 0.5;
-            const y = (e.clientY - rect.top) / rect.height - 0.5;
-            card.style.transform = `perspective(800px) rotateY(${x * 12}deg) rotateX(${-y * 10}deg) scale(1.02)`;
-        });
-        document.getElementById('reading-overlay').addEventListener('mouseleave', e => {
-            const card = e.target.closest('.card-unit');
-            if (card) card.style.transform = '';
-        }, true);
+            const drawGlow = () => {
+                ctx.clearRect(0, 0, glowCanvas.width, glowCanvas.height);
+                mouseTrail.forEach((pt, i) => {
+                    pt.age++;
+                    const alpha = Math.max(0, 0.15 - pt.age * 0.008);
+                    const radius = Math.max(1, 30 - pt.age * 1.2);
+                    if (alpha <= 0) return;
+                    const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, radius);
+                    grad.addColorStop(0, `rgba(212, 175, 55, ${alpha})`);
+                    grad.addColorStop(1, 'transparent');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                mouseTrail = mouseTrail.filter(pt => pt.age < 20);
+                requestAnimationFrame(drawGlow);
+            };
+            drawGlow();
+
+            // 3. Interactive 3D Card Tilt (mouse only)
+            document.getElementById('reading-overlay').addEventListener('mousemove', e => {
+                const card = e.target.closest('.card-unit');
+                if (!card) return;
+                const rect = card.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width - 0.5;
+                const y = (e.clientY - rect.top) / rect.height - 0.5;
+                card.style.transform = `perspective(800px) rotateY(${x * 12}deg) rotateX(${-y * 10}deg) scale(1.02)`;
+            });
+            document.getElementById('reading-overlay').addEventListener('mouseleave', e => {
+                const card = e.target.closest('.card-unit');
+                if (card) card.style.transform = '';
+            }, true);
+        } else {
+            // Mobile: tap card to zoom briefly
+            document.getElementById('reading-overlay').addEventListener('click', e => {
+                const card = e.target.closest('.card-unit');
+                if (!card) return;
+                if (card.classList.contains('card-zoomed')) {
+                    card.classList.remove('card-zoomed');
+                } else {
+                    document.querySelectorAll('.card-unit.card-zoomed').forEach(c => c.classList.remove('card-zoomed'));
+                    card.classList.add('card-zoomed');
+                    card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                }
+            });
+        }
     },
 
     setupEvents() {
