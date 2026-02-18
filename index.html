@@ -4,58 +4,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arcanum Aeterna - The Master Mystic</title>
+    <title>Arcanum Aeterna - Anti-Gravity Edition</title>
+    <meta name="description" content="The Master Mystic Tarot Experience">
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+Thai:wght@300;400;600&display=swap"
         rel="stylesheet">
-    <!-- Styles -->
     <link rel="stylesheet" href="style.css">
+    <!-- Matter.js Physics Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 </head>
 
 <body>
 
-    <!-- Ambient Canvas -->
-    <canvas id="cosmos-canvas"></canvas>
+    <!-- Parallax Background Layer -->
+    <div id="parallax-bg" class="parallax-layer"></div>
+    <div id="stars-fg" class="parallax-layer"></div>
 
-    <!-- Header -->
-    <header>
-        <h1>Arcanum Aeterna</h1>
-        <div class="subtitle">Whispers from the Void</div>
+    <!-- Background Audio -->
+    <audio id="bg-music" src="Sound.mp3" loop></audio>
 
-        <!-- Audio Toggle (Absolute Position via CSS) -->
-        <div class="audio-control-container">
-            <button class="icon-btn" id="btn-sound" onclick="AudioEngine.toggleMute()"
-                title="Toggle Ambient Sound">🔇</button>
+
+    <!-- Physics Canvas Container -->
+    <div id="physics-container"></div>
+
+    <!-- Top Controls (Glassmorphism) -->
+    <div class="top-controls glass-panel">
+        <div class="lang-switch">
+            <button id="lang-en" class="lang-btn active" data-lang="en">EN</button>
+            <span class="divider">|</span>
+            <button id="lang-th" class="lang-btn" data-lang="th">TH</button>
         </div>
+        <div class="audio-switch">
+            <button id="btn-sound" class="icon-btn" aria-label="Toggle Sound">🔇</button>
+        </div>
+    </div>
+
+    <header class="glass-header">
+        <h1 id="app-title" class="glowing-text">Arcanum Aeterna</h1>
+        <div id="app-subtitle" class="subtitle">The Master Mystic Tarot</div>
     </header>
 
-    <!-- Controls -->
-    <div class="control-panel">
-        <button class="action-btn" id="btn-draw" onclick="TarotApp.drawCard()">Draw Card</button>
-        <button class="action-btn" id="btn-shuffle" onclick="TarotApp.shuffleDeck()">Shuffle Deck</button>
-        <button class="action-btn" id="btn-reset" onclick="TarotApp.resetTableau()">Reset</button>
+    <!-- Floating Action Bar -->
+    <div class="control-panel glass-panel-floating">
+        <button id="btn-shuffle" class="action-btn">Shuffle Deck</button>
+        <button id="btn-draw" class="action-btn">Draw Card</button>
+        <button id="btn-reset" class="action-btn">Reset Table</button>
+        <button id="btn-history" class="action-btn">View History 📜</button>
     </div>
 
-    <!-- Drawn Cards Summary List (New) -->
-    <div id="summary-container">
-        <div class="summary-title">Drawn Cards Summary</div>
-        <ul id="summary-list">
-            <!-- Items injected via JS e.g. "1. The Fool (Reversed)" -->
-        </ul>
+    <!-- Status Toast -->
+    <div id="status-display" aria-live="polite"></div>
+
+    <!-- Overlay UI for Reading (Grid Mode) functionality is handled via Physics logic now, but we keep a container for reading overlay if needed -->
+    <div id="reading-overlay" class="reading-layer">
+        <!-- Reading slots populated by JS when cards snap -->
     </div>
 
-    <!-- Status Message -->
-    <div id="status-display">The cards await your query...</div>
+    <!-- History Modal (Glassmorphism) -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content glass-modal">
+            <button id="close-history" class="close-btn" aria-label="Close History">×</button>
+            <div id="history-title" class="history-title">Session History</div>
+            <ul id="history-list">
+                <!-- Items injected via JS -->
+            </ul>
 
-    <!-- Cards Layout -->
-    <div id="tableau">
-        <!-- Cards injected here -->
+            <!-- AI Copy Section -->
+            <div class="ai-control-section">
+                <div id="ai-title" class="ai-title">Ask the AI Mystic</div>
+                <div class="input-group">
+                    <label for="ai-topic" id="lbl-topic" class="input-label">Topic:</label>
+                    <select id="ai-topic" class="mystic-input">
+                        <option value="General Overview">General Overview</option>
+                        <option value="Love & Relationships">Love</option>
+                        <option value="Work & Career">Work</option>
+                        <option value="Finance">Finance</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="ai-situation" id="lbl-situation" class="input-label">Situation:</label>
+                    <textarea id="ai-situation" class="mystic-input" placeholder="..."></textarea>
+                </div>
+                <button id="btn-copy-ai" class="action-btn ai-copy-btn rune-btn">Copy Prompt</button>
+            </div>
+        </div>
     </div>
 
-    <!-- Script -->
     <script src="script.js"></script>
 </body>
 
