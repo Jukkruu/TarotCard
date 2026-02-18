@@ -69,6 +69,22 @@
         <!-- Reading slots populated by JS when cards snap -->
     </div>
 
+    <!-- Card Detail Overlay (click to expand) -->
+    <div id="card-detail-overlay" class="card-detail-overlay" aria-label="Card Detail">
+        <div class="card-detail-inner">
+            <button class="card-detail-close" aria-label="Close">&times;</button>
+            <div class="card-detail-image">
+                <img id="detail-img" src="" alt="Tarot Card">
+            </div>
+            <div class="card-detail-info">
+                <h2 id="detail-title" class="card-detail-title"></h2>
+                <div id="detail-orient" class="card-detail-orient"></div>
+                <div id="detail-meaning" class="card-detail-meaning"></div>
+                <div id="detail-type" class="card-detail-type"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- History Modal (Glassmorphism) -->
     <div id="history-modal" class="modal">
         <div class="modal-content glass-modal">

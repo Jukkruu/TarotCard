@@ -293,20 +293,23 @@ const App = {
                 const card = e.target.closest('.card-unit');
                 if (card) card.style.transform = '';
             }, true);
-        } else {
-            // Mobile: tap card to zoom briefly
-            document.getElementById('reading-overlay').addEventListener('click', e => {
-                const card = e.target.closest('.card-unit');
-                if (!card) return;
-                if (card.classList.contains('card-zoomed')) {
-                    card.classList.remove('card-zoomed');
-                } else {
-                    document.querySelectorAll('.card-unit.card-zoomed').forEach(c => c.classList.remove('card-zoomed'));
-                    card.classList.add('card-zoomed');
-                    card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                }
-            });
         }
+
+        // 4. Click-to-expand card detail (both mobile & desktop)
+        document.getElementById('reading-overlay').addEventListener('click', e => {
+            const card = e.target.closest('.card-unit');
+            if (!card) return;
+            const idx = parseInt(card.dataset.cardIndex);
+            if (isNaN(idx)) return;
+            this.showDetail(state.drawnCards[idx]);
+        });
+
+        // Close detail overlay
+        const detailOverlay = document.getElementById('card-detail-overlay');
+        detailOverlay.querySelector('.card-detail-close').addEventListener('click', () => this.hideDetail());
+        detailOverlay.addEventListener('click', e => {
+            if (e.target === detailOverlay) this.hideDetail();
+        });
     },
 
     setupEvents() {
@@ -415,6 +418,7 @@ const App = {
                 <div class="card-keywords">${mean}</div>
             </div>
         `;
+        el.dataset.cardIndex = state.drawnCards.length - 1;
         overlay.appendChild(el);
         // Scroll to new
         el.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'center' });
@@ -508,6 +512,28 @@ const App = {
         const el = document.getElementById('status-display');
         el.textContent = msg; el.classList.add('visible');
         setTimeout(() => el.classList.remove('visible'), 2000);
+    },
+
+    showDetail(cardObj) {
+        if (!cardObj) return;
+        const overlay = document.getElementById('card-detail-overlay');
+        document.getElementById('detail-img').src = cardObj.img;
+        document.getElementById('detail-title').textContent = state.lang === 'th' ? cardObj.nameTH : cardObj.nameEN;
+
+        const orientEl = document.getElementById('detail-orient');
+        orientEl.textContent = cardObj.reversed
+            ? (state.lang === 'th' ? '⟲ กลับหัว' : '⟲ REVERSED')
+            : (state.lang === 'th' ? '△ หัวตั้ง' : '△ UPRIGHT');
+        orientEl.className = 'card-detail-orient ' + (cardObj.reversed ? 'reversed' : 'upright');
+
+        document.getElementById('detail-meaning').textContent = state.lang === 'th' ? cardObj.mTH : cardObj.mEN;
+        document.getElementById('detail-type').textContent = cardObj.type === 'Major' ? '✦ Major Arcana' : '✧ Minor Arcana';
+
+        overlay.classList.add('visible');
+    },
+
+    hideDetail() {
+        document.getElementById('card-detail-overlay').classList.remove('visible');
     }
 };
 

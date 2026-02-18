@@ -406,6 +406,7 @@ button.action-btn:active {
     flex-direction: column;
     overflow: hidden;
     pointer-events: auto;
+    cursor: pointer;
     position: relative;
     flex-shrink: 0;
     transform-origin: center;
@@ -801,124 +802,316 @@ textarea.mystic-input {
     transform: translate(-50%, 0);
 }
 
-/* Mobile tap-to-zoom */
-.card-zoomed {
-    transform: scale(1.15) !important;
-    z-index: 20 !important;
-    box-shadow: 0 0 40px rgba(212, 175, 55, 0.5), 0 20px 60px rgba(0, 0, 0, 0.9) !important;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+/* --- CARD DETAIL OVERLAY --- */
+.card-detail-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(2, 1, 5, 0.92);
+    backdrop-filter: blur(16px);
+    z-index: 500;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.card-detail-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.card-detail-inner {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    max-width: 800px;
+    width: 90%;
+    position: relative;
+    animation: detailSlideIn 0.4s ease forwards;
+}
+
+@keyframes detailSlideIn {
+    from {
+        transform: translateY(30px) scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.card-detail-close {
+    position: absolute;
+    top: -20px;
+    right: -10px;
+    background: none;
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    color: var(--accent-gold);
+    font-size: 1.8rem;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s;
+    backdrop-filter: blur(8px);
+    background: rgba(10, 5, 20, 0.6);
+}
+
+.card-detail-close:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+}
+
+.card-detail-image {
+    flex-shrink: 0;
+    width: 280px;
+    height: 440px;
+    border: 2px solid var(--accent-gold);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(212, 175, 55, 0.25), 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+
+.card-detail-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: sepia(0.1) contrast(1.1);
+}
+
+.card-detail-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.card-detail-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 2rem;
+    margin: 0;
+    background: linear-gradient(to right, #ffd700, #b8860b);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.6));
+}
+
+.card-detail-orient {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+}
+
+.card-detail-orient.upright {
+    color: var(--accent-silver);
+}
+
+.card-detail-orient.reversed {
+    color: #e74c3c;
+    text-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
+}
+
+.card-detail-meaning {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    color: var(--text-primary);
+    line-height: 1.6;
+    border-left: 2px solid var(--accent-gold);
+    padding-left: 16px;
+}
+
+.card-detail-type {
+    font-size: 0.85rem;
+    color: #666;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+/* Mobile detail view */
+@media (max-width: 768px) {
+    .card-detail-inner {
+        flex-direction: column;
+        gap: 16px;
+        padding: 20px 10px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .card-detail-image {
+        width: 180px;
+        height: 280px;
+    }
+
+    .card-detail-title {
+        font-size: 1.3rem;
+        text-align: center;
+    }
+
+    .card-detail-orient {
+        text-align: center;
+        font-size: 0.9rem;
+    }
+
+    .card-detail-meaning {
+        font-size: 1.05rem;
+        text-align: center;
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid rgba(212, 175, 55, 0.3);
+        padding-top: 12px;
+    }
+
+    .card-detail-type {
+        text-align: center;
+    }
+
+    .card-detail-close {
+        top: 5px;
+        right: 5px;
+    }
 }
 
 /* --- MOBILE (Tablets & Phones) --- */
 @media (max-width: 768px) {
     body {
         height: 100dvh;
-        /* Modern mobile viewport */
     }
 
-    /* Compact Header */
+    /* Compact Header — leave room for sound btn */
     .glass-header {
-        padding: 1rem 0 0.5rem;
+        padding: 0.8rem 50px 0.3rem 10px;
     }
 
     .glowing-text {
-        font-size: 2rem;
+        font-size: 1.7rem;
     }
 
     .subtitle {
-        font-size: 0.9rem;
-        letter-spacing: 2px;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
     }
 
     .glass-header::after {
-        font-size: 0.5rem;
-        margin-top: 6px;
+        font-size: 0.45rem;
+        margin-top: 4px;
+        letter-spacing: 8px;
     }
 
-    /* Top Controls */
+    /* Hide sound & language on mobile */
     .top-controls {
-        top: 10px;
-        right: 10px;
-        gap: 10px;
+        display: none;
     }
 
-    /* Control Panel - Floating Bottom Bar */
+    /* Control Panel — compact grid at bottom */
     .control-panel {
-        bottom: 20px;
-        width: 96%;
+        position: fixed;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 94%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 6px;
-        padding: 10px 12px;
-        border-radius: 30px;
+        padding: 10px;
+        border-radius: 16px;
+        z-index: 150;
     }
 
     button.action-btn {
-        padding: 10px 14px;
-        font-size: 0.75rem;
+        padding: 10px 8px;
+        font-size: 0.7rem;
         letter-spacing: 0;
-        border-radius: 20px;
-        min-height: 44px;
-        /* Touch target */
+        border-radius: 12px;
+        min-height: 42px;
+        width: 100%;
+        text-align: center;
     }
 
-    /* Card Display - Horizontal Scroll Carousel */
+    /* Card Display — centered wrapping grid (3 top, 2 bottom) */
     #reading-overlay {
         position: fixed;
-        top: auto;
-        bottom: 90px;
-        /* Above control panel */
-        left: 0;
-        transform: none;
-        justify-content: flex-start;
-        align-items: center;
-        overflow-x: auto;
-        overflow-y: hidden;
-        padding: 10px 20px;
-        gap: 12px;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 400px;
         height: auto;
-        width: 100%;
+        max-height: 55vh;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: flex-start;
+        align-content: center;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 8px;
+        gap: 8px;
+        pointer-events: none;
         box-sizing: border-box;
-        scroll-padding: 20px;
+        scroll-snap-type: none;
     }
 
     .card-unit {
-        width: 160px;
-        height: 270px;
-        scroll-snap-align: center;
+        width: calc(33.33% - 8px);
+        max-width: 110px;
+        height: 170px;
         flex-shrink: 0;
+        pointer-events: auto;
     }
 
     .card-title {
-        font-size: 0.75rem;
+        font-size: 0.65rem;
+        letter-spacing: 0;
     }
 
     .card-keywords {
-        font-size: 0.75rem;
+        font-size: 0.6rem;
     }
 
     .card-orientation {
-        font-size: 0.65rem;
+        font-size: 0.55rem;
+        margin: 2px 0;
     }
 
-    /* Shimmer disabled on touch (no hover) */
+    .card-text-area {
+        padding: 5px;
+    }
+
+    .card-image-area {
+        height: 60%;
+    }
+
+    /* Shimmer disabled on touch */
     .card-unit::before {
         display: none;
     }
 
-    /* Toast repositioned */
+    /* Toast — above cards */
     #status-display {
-        top: 80px;
-        min-width: 240px;
-        padding: 12px 24px;
-        font-size: 0.9rem;
+        top: auto;
+        bottom: 340px;
+        min-width: 200px;
+        padding: 10px 20px;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
     }
 
     /* Modal fullscreen on mobile */
     .glass-modal {
         width: 100%;
         max-width: 100%;
-        max-height: 100vh;
         max-height: 100dvh;
         border-radius: 0;
         border: none;
@@ -939,56 +1132,65 @@ textarea.mystic-input {
     }
 
     .history-name {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
     }
 
     .ai-control-section {
-        padding: 15px;
+        padding: 12px;
     }
 
-    /* Reduce particles for performance */
-    .particle:nth-child(n+20) {
+    /* Performance */
+    .particle:nth-child(n+15) {
         display: none;
     }
 
-    /* Hide cursor glow on touch devices */
     #cursor-glow {
         display: none;
     }
 
-    /* Vignette lighter for readability */
     #vignette-glow {
-        opacity: 0.5;
+        opacity: 0.4;
+    }
+
+    /* Card zoom smaller on mobile */
+    .card-zoomed {
+        transform: scale(1.1) !important;
     }
 }
 
-/* --- SMALL PHONES --- */
+/* --- SMALL PHONES (iPhone SE etc.) --- */
 @media (max-width: 400px) {
     .glowing-text {
-        font-size: 1.6rem;
+        font-size: 1.4rem;
     }
 
     .subtitle {
-        font-size: 0.75rem;
+        font-size: 0.65rem;
     }
 
     .control-panel {
         gap: 4px;
-        padding: 8px 10px;
+        padding: 8px;
     }
 
     button.action-btn {
-        padding: 8px 10px;
-        font-size: 0.7rem;
+        padding: 8px 6px;
+        font-size: 0.65rem;
+        min-height: 38px;
     }
 
     .card-unit {
-        width: 140px;
-        height: 240px;
+        height: 155px;
     }
 
     #reading-overlay {
-        bottom: 80px;
-        padding: 8px 12px;
+        max-height: 50vh;
+        padding: 5px;
+        gap: 6px;
+    }
+
+    #status-display {
+        font-size: 0.7rem;
+        min-width: 180px;
     }
 }
