@@ -17,18 +17,39 @@
 
 <body>
 
+    <!-- Welcome Intro Modal -->
+    <div id="welcome-modal" class="welcome-overlay visible">
+        <div class="welcome-card">
+            <div class="welcome-header">
+                <div class="welcome-icon">✦</div>
+                <p class="welcome-pre">— Welcome to —</p>
+                <h2 id="welcome-title" class="welcome-title">Arcanum Aeterna</h2>
+                <p id="welcome-sub" class="welcome-sub">The Master Mystic Tarot</p>
+            </div>
+            <div class="welcome-body">
+                <ul id="welcome-steps" class="welcome-steps">
+                    <li><span class="step-icon">🔀</span><span id="ws1"><b>Shuffle Deck</b> — Realign the cosmic
+                            energy</span></li>
+                    <li><span class="step-icon">🃏</span><span id="ws2"><b>Draw Card</b> — Reveal up to 5 cards from the
+                            deck</span></li>
+                    <li><span class="step-icon">👆</span><span id="ws3"><b>Tap a Card</b> — Expand to see full image &
+                            meaning</span></li>
+                    <li><span class="step-icon">📜</span><span id="ws4"><b>History</b> — Review all cards from your
+                            session</span></li>
+                    <li><span class="step-icon">🤖</span><span id="ws5"><b>Ask AI</b> — Copy your reading as a prompt
+                            for AI</span></li>
+                </ul>
+            </div>
+            <button id="welcome-dismiss" class="welcome-btn">Begin Your Reading ✦</button>
+        </div>
+    </div>
+
     <!-- Parallax Background Layer -->
     <div id="parallax-bg" class="parallax-layer"></div>
     <div id="stars-fg" class="parallax-layer"></div>
 
-    <!-- Floating Magical Particles -->
-    <div id="particles-container" aria-hidden="true"></div>
-
     <!-- Ambient Vignette Glow -->
     <div id="vignette-glow" aria-hidden="true"></div>
-
-    <!-- Cursor Glow Trail Canvas -->
-    <canvas id="cursor-glow" aria-hidden="true"></canvas>
 
     <!-- Background Audio -->
     <audio id="bg-music" src="Sound.mp3" loop></audio>
@@ -96,9 +117,9 @@
                 <!-- Items injected via JS -->
             </ul>
 
-            <!-- AI Copy Section -->
+            <!-- AI Oracle Section -->
             <div class="ai-control-section">
-                <div id="ai-title" class="ai-title">Ask the AI Mystic</div>
+                <div id="ai-title" class="ai-title">🔮 Ask the AI Oracle</div>
                 <div class="input-group">
                     <label for="ai-topic" id="lbl-topic" class="input-label">Topic:</label>
                     <select id="ai-topic" class="mystic-input">
@@ -106,13 +127,16 @@
                         <option value="Love & Relationships">Love</option>
                         <option value="Work & Career">Work</option>
                         <option value="Finance">Finance</option>
+                        <option value="Health">Health</option>
+                        <option value="Spiritual Growth">Spiritual</option>
                     </select>
                 </div>
                 <div class="input-group">
                     <label for="ai-situation" id="lbl-situation" class="input-label">Situation:</label>
-                    <textarea id="ai-situation" class="mystic-input" placeholder="..."></textarea>
+                    <textarea id="ai-situation" class="mystic-input"
+                        placeholder="Describe your current situation..."></textarea>
                 </div>
-                <button id="btn-copy-ai" class="action-btn ai-copy-btn rune-btn">Copy Prompt</button>
+                <button id="btn-copy-ai" class="action-btn ai-copy-btn rune-btn"> Copy Prompt</button>
             </div>
         </div>
     </div>

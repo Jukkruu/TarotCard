@@ -53,7 +53,7 @@ const appData = {
             btnShuffle: "Shuffle Deck", btnDraw: "Draw Card", btnReset: "Reset Table", btnHistory: "History 📜",
             msgShuffle: "The cosmos is shifting...", msgShuffled: "Destiny is realigned.", msgCleared: "The table is silent.",
             histTitle: "Session History", aiTitle: "Consult the Oracle",
-            lblTopic: "Topic:", lblSituation: "Context:", btnCopy: "Full Reading", copied: "Inscribed to clipboard!",
+            lblTopic: "Topic:", lblSituation: "Context:", btnCopy: "Copy Prompt", copied: "Inscribed to clipboard!",
             clearHist: "Clear History"
         },
         th: {
@@ -159,7 +159,15 @@ const Physics = {
 
         this.render = Render.create({
             element: document.getElementById('physics-container'), engine: this.engine,
-            options: { width: this.width, height: this.height, background: 'transparent', wireframes: false }
+            options: {
+                width: this.width, height: this.height,
+                background: 'transparent',
+                wireframes: false,
+                showAngleIndicator: false,
+                showVelocity: false,
+                showCollisions: false,
+                showDebug: false
+            }
         });
 
         // Invisible Physics Layout
@@ -212,6 +220,14 @@ const App = {
         Physics.init(); Physics.spawnCards();
         this.setupEvents(); this.updateUI();
 
+        // Welcome modal dismiss
+        document.getElementById('welcome-dismiss').addEventListener('click', () => {
+            document.getElementById('welcome-modal').classList.remove('visible');
+            // Init audio on this user gesture (required by browsers)
+            AudioSys.init();
+            if (state.soundOn) AudioSys.updateBgMusic();
+        });
+
         // Parallax background
         document.addEventListener('mousemove', e => {
             const x = (e.clientX / window.innerWidth - 0.5) * 20, y = (e.clientY / window.innerHeight - 0.5) * 20;
@@ -227,6 +243,21 @@ const App = {
         // --- MAGICAL EFFECTS ---
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
+        // Visibility Change Handling (Background Sleep)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Pause systems
+                if (Physics.runner) Matter.Runner.stop(Physics.runner);
+                if (AudioSys.bgAudio) AudioSys.bgAudio.pause();
+            } else {
+                // Resume systems
+                if (Physics.runner && Physics.engine) Matter.Runner.run(Physics.runner, Physics.engine);
+                if (state.soundOn && AudioSys.bgAudio) {
+                    AudioSys.bgAudio.play().catch(e => console.log("Bg audio resume blocked"));
+                }
+            }
+        });
+
         // Auto-enable sound on mobile (button is hidden)
         if (isTouchDevice) {
             state.soundOn = true;
@@ -236,60 +267,9 @@ const App = {
             }, { once: true });
         }
 
-        // 1. Spawn Floating Particles (fewer on mobile)
-        const particleBox = document.getElementById('particles-container');
-        const particleCount = isTouchDevice ? 15 : 35;
-        for (let i = 0; i < particleCount; i++) {
-            const p = document.createElement('div');
-            p.className = 'particle';
-            const size = Math.random() * 4 + 1;
-            p.style.cssText = `
-                left: ${Math.random() * 100}%;
-                --size: ${size}px;
-                --dur: ${Math.random() * 10 + 6}s;
-                --delay: ${Math.random() * 10}s;
-                --drift: ${(Math.random() - 0.5) * 80}px;
-                --peak-opacity: ${Math.random() * 0.4 + 0.2};
-            `;
-            particleBox.appendChild(p);
-        }
-
         // Desktop-only effects
         if (!isTouchDevice) {
-            // 2. Cursor Glow Trail
-            const glowCanvas = document.getElementById('cursor-glow');
-            const ctx = glowCanvas.getContext('2d');
-            const resizeCanvas = () => { glowCanvas.width = window.innerWidth; glowCanvas.height = window.innerHeight; };
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
-
-            let mouseTrail = [];
-            document.addEventListener('mousemove', e => {
-                mouseTrail.push({ x: e.clientX, y: e.clientY, age: 0 });
-                if (mouseTrail.length > 20) mouseTrail.shift();
-            });
-
-            const drawGlow = () => {
-                ctx.clearRect(0, 0, glowCanvas.width, glowCanvas.height);
-                mouseTrail.forEach((pt, i) => {
-                    pt.age++;
-                    const alpha = Math.max(0, 0.15 - pt.age * 0.008);
-                    const radius = Math.max(1, 30 - pt.age * 1.2);
-                    if (alpha <= 0) return;
-                    const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, radius);
-                    grad.addColorStop(0, `rgba(212, 175, 55, ${alpha})`);
-                    grad.addColorStop(1, 'transparent');
-                    ctx.fillStyle = grad;
-                    ctx.beginPath();
-                    ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
-                    ctx.fill();
-                });
-                mouseTrail = mouseTrail.filter(pt => pt.age < 20);
-                requestAnimationFrame(drawGlow);
-            };
-            drawGlow();
-
-            // 3. Interactive 3D Card Tilt (mouse only)
+            // Interactive 3D Card Tilt (mouse only)
             document.getElementById('reading-overlay').addEventListener('mousemove', e => {
                 const card = e.target.closest('.card-unit');
                 if (!card) return;
@@ -334,27 +314,54 @@ const App = {
             this.showToast(isOn ? "Sound Enabled" : "Sound Muted");
         };
 
-        // Shuffle with Visual FX (Screen Shake)
+        // Shuffle with Galactic Vortex Effect
         document.getElementById('btn-shuffle').onclick = () => {
             this.showToast(appData.translations[state.lang].msgShuffle);
-            // Instant clear (no vanish animation for shuffle)
+
+            const cardData = [...document.querySelectorAll('.card-unit')].map(c => ({
+                el: c,
+                rect: c.getBoundingClientRect()
+            }));
+
+            // Reset physics & overlay IMMEDIATELY — clean slate for new draws
             state.drawnCards = []; state.drawnBodies = [];
             document.getElementById('reading-overlay').innerHTML = '';
             Physics.spawnCards();
+
+            // Galaxy vortex overlay
+            const vortexOverlay = document.createElement('div');
+            vortexOverlay.className = 'galaxy-overlay';
+            vortexOverlay.innerHTML = '<div class="galaxy-disc"></div><div class="galaxy-core"></div>';
+            document.body.appendChild(vortexOverlay);
+            setTimeout(() => vortexOverlay.remove(), 1100);
+
+            if (cardData.length > 0) {
+                cardData.forEach(cd => {
+                    const c = cd.el;
+                    const r = cd.rect;
+                    Object.assign(c.style, {
+                        position: 'fixed',
+                        top: `${r.top}px`,
+                        left: `${r.left}px`,
+                        width: `${r.width}px`,
+                        height: `${r.height}px`,
+                        margin: '0',
+                        zIndex: '300',
+                        pointerEvents: 'none',
+                        overflow: 'visible'
+                    });
+                    document.body.appendChild(c);
+                    c.getBoundingClientRect(); // force reflow
+                    c.classList.add('vortex-suck');
+                });
+                setTimeout(() => cardData.forEach(cd => cd.el.remove()), 1100);
+            } else {
+                document.body.classList.add('shake-blur');
+                setTimeout(() => document.body.classList.remove('shake-blur'), 700);
+            }
+
             Physics.shakeWorld();
-
-            // Visual Shake FX on canvas AND body
-            const canvas = document.getElementById('physics-container');
-            canvas.classList.add('shake-blur');
-            document.body.classList.add('shake-blur');
-            setTimeout(() => {
-                canvas.classList.remove('shake-blur');
-                document.body.classList.remove('shake-blur');
-            }, 800);
-
-            setTimeout(() => this.showToast(appData.translations[state.lang].msgShuffled), 1000);
-
-            // Ensure audio starts if on
+            setTimeout(() => this.showToast(appData.translations[state.lang].msgShuffled), 1200);
             if (state.soundOn) AudioSys.updateBgMusic();
         };
 
@@ -439,22 +446,50 @@ const App = {
     },
 
     actionReset() {
-        const cards = document.querySelectorAll('.card-unit');
-        if (cards.length === 0) {
-            // Nothing to animate, just reset physics
-            state.drawnCards = []; state.drawnBodies = [];
-            Physics.spawnCards();
-            return;
-        }
-        // Apply vanishing animation
-        cards.forEach(c => c.classList.add('vanishing'));
+        const cardData = [...document.querySelectorAll('.card-unit')].map(c => ({
+            el: c,
+            rect: c.getBoundingClientRect()
+        }));
+
+        // ── Reset state, overlay & physics IMMEDIATELY ──
+        state.drawnCards = [];
+        state.drawnBodies = [];
+        document.getElementById('reading-overlay').innerHTML = ''; // clean overlay NOW
+        Physics.spawnCards();
+
+        if (cardData.length === 0) return;
+
+        // Screen flash
+        const flash = document.createElement('div');
+        flash.className = 'burn-flash';
+        document.body.appendChild(flash);
+        setTimeout(() => flash.remove(), 800);
+
+        // Float cards at their exact screen pos
+        cardData.forEach(cd => {
+            const c = cd.el;
+            const r = cd.rect;
+            Object.assign(c.style, {
+                position: 'fixed',
+                top: `${r.top}px`,
+                left: `${r.left}px`,
+                width: `${r.width}px`,
+                height: `${r.height}px`,
+                margin: '0',
+                zIndex: '300',
+                pointerEvents: 'none',
+                overflow: 'visible'
+            });
+            document.body.appendChild(c);
+            c.getBoundingClientRect();
+            c.classList.add('alchemical-burn');
+        });
+
+        if (state.soundOn) AudioSys.playOneShot('whoosh');
         this.showToast(appData.translations[state.lang].msgCleared);
-        // Wait for animation, then clear
-        setTimeout(() => {
-            state.drawnCards = []; state.drawnBodies = [];
-            document.getElementById('reading-overlay').innerHTML = '';
-            Physics.spawnCards();
-        }, 500);
+
+        // Remove burned cards after animation
+        setTimeout(() => cardData.forEach(cd => cd.el.remove()), 1600);
     },
 
     renderHistory() {
@@ -504,7 +539,7 @@ const App = {
         const sit = document.getElementById('ai-situation').value;
         const cards = state.drawnCards.map((c, i) => `${i + 1}. ${c.nameTH} (${c.reversed ? 'กลับหัว' : 'หัวตั้ง'})`).join(', ');
 
-        const prompt = `รับบทเป็นหมอดูไพ่ทาโรต์ผู้เชี่ยวชาญที่มีประสบการณ์กว่า 20 ปี ช่วยทำนายดวงชะตาจากไพ่ที่ฉันจับได้ดังนี้:
+        const prompt = `รับบทเป็นหมอดูไพ่ทาโรต์ผู้เชี่ยวชาญที่มีประสบการณ์กว่า 100 ปีทำนายดวงชะตาจากไพ่ที่ฉันจับได้ดังนี้:
 ไพ่ที่ได้: ${cards}
 หัวข้อคำถาม: ${topic}
 สถานการณ์ปัจจุบัน: ${sit}
@@ -515,6 +550,114 @@ const App = {
 ขอภาษาที่เป็นกันเอง เข้าใจง่าย และตรงไปตรงมา`;
 
         navigator.clipboard.writeText(prompt).then(() => this.showToast(appData.translations[state.lang].copied));
+    },
+
+    async askOracle() {
+        if (state.drawnCards.length === 0) {
+            this.showToast(state.lang === 'th' ? 'กรุณาเปิดไพ่ก่อน' : 'Draw cards first!');
+            return;
+        }
+
+        const topic = document.getElementById('ai-topic').value;
+        const sit = document.getElementById('ai-situation').value;
+        const loadingEl = document.getElementById('ai-loading');
+        const responseEl = document.getElementById('ai-response');
+        const readBtn = document.getElementById('btn-ai-read');
+
+        // Show loading, hide previous response
+        loadingEl.style.display = 'flex';
+        responseEl.style.display = 'none';
+        readBtn.disabled = true;
+        readBtn.textContent = '⏳ Reading...';
+
+        // Build card descriptions
+        const cardDescs = state.drawnCards.map((c, i) => {
+            const name = `${c.nameEN} / ${c.nameTH}`;
+            const orient = c.reversed ? 'Reversed (กลับหัว)' : 'Upright (หัวตั้ง)';
+            const meaning = `${c.mEN} / ${c.mTH}`;
+            return `Card ${i + 1}: ${name} — ${orient} — ${meaning}`;
+        }).join('\n');
+
+        const lang = state.lang === 'th' ? 'Thai (ภาษาไทย)' : 'English';
+
+        const prompt = `You are Arcanum Aeterna, a wise and mystical tarot oracle with 20 years of experience. You speak with elegance and warmth.
+
+The seeker has drawn these cards:
+${cardDescs}
+
+Topic: ${topic}
+Their situation: ${sit || 'Not specified'}
+
+Please provide a reading in ${lang} with:
+1. 🃏 Individual card interpretations in the context of their question
+2. 🔗 How the cards connect — tell a story
+3. ✨ Actionable advice they can follow
+4. 🌟 A final empowering message
+
+Use a warm, mystical tone. Keep it concise but meaningful (under 500 words). Use emojis sparingly for section headers.
+${state.lang === 'th' ? 'ตอบเป็นภาษาไทยทั้งหมด ใช้ภาษาที่สละสลวย เป็นกันเอง เข้าใจง่าย' : ''}`;
+
+        try {
+            const API_KEY = 'AIzaSyDRc-i1GdwfVatlPOTk1_ZKLJ8EkrjAxAg';
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${API_KEY}`;
+            const body = JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.9,
+                    maxOutputTokens: 1024
+                }
+            });
+
+            // Retry logic for rate limits (429)
+            let res, retries = 0;
+            const maxRetries = 3;
+            while (retries <= maxRetries) {
+                res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body
+                });
+                if (res.status === 429 && retries < maxRetries) {
+                    retries++;
+                    const waitSec = retries * 3;
+                    loadingEl.querySelector('span').textContent = `Rate limited — retrying in ${waitSec}s... (${retries}/${maxRetries})`;
+                    await new Promise(r => setTimeout(r, waitSec * 1000));
+                    continue;
+                }
+                break;
+            }
+
+            if (!res.ok) {
+                const errBody = await res.text().catch(() => '');
+                throw new Error(res.status === 429
+                    ? (state.lang === 'th' ? 'กรุณารอสักครู่แล้วลองใหม่' : 'Too many requests — please wait a moment and try again')
+                    : `API error ${res.status}`);
+            }
+
+            const data = await res.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!text) throw new Error('Empty response');
+
+            // Basic markdown to HTML
+            const formatted = text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/### (.+)/g, '<h4>$1</h4>')
+                .replace(/## (.+)/g, '<h3>$1</h3>')
+                .replace(/\n/g, '<br>');
+
+            responseEl.innerHTML = formatted;
+            responseEl.style.display = 'block';
+            responseEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        } catch (err) {
+            responseEl.innerHTML = `<span style="color: #e74c3c;">⚠️ ${state.lang === 'th' ? 'เกิดข้อผิดพลาด' : 'Oracle Error'}: ${err.message}</span>`;
+            responseEl.style.display = 'block';
+        } finally {
+            loadingEl.style.display = 'none';
+            readBtn.disabled = false;
+            readBtn.textContent = '🔮 Read My Cards';
+        }
     },
 
     showToast(msg) {
