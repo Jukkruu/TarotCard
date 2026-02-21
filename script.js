@@ -258,6 +258,11 @@ const App = {
             }
         });
 
+        // Prevent multi-touch zoom (pinch) on mobile
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
         // Auto-enable sound on mobile (button is hidden)
         if (isTouchDevice) {
             state.soundOn = true;
