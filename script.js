@@ -50,19 +50,25 @@ const appData = {
     translations: {
         en: {
             title: "Arcanum Aeterna", subtitle: "The Master Mystic Tarot",
-            btnShuffle: "Shuffle Deck", btnDraw: "Draw Card", btnReset: "Reset Table", btnHistory: "History 📜",
-            msgShuffle: "The cosmos is shifting...", msgShuffled: "Destiny is realigned.", msgCleared: "The table is silent.",
-            histTitle: "Session History", aiTitle: "Consult the Oracle",
-            lblTopic: "Topic:", lblSituation: "Context:", btnCopy: "Copy Prompt", copied: "Inscribed to clipboard!",
-            clearHist: "Clear History"
+            btnShuffle: "Shuffle Deck", btnDraw: "Draw Card", btnReset: "Reset Table", btnHistory: "Chronicle",
+            msgShuffle: "The arcane forces stir...", msgShuffled: "The stars have been realigned.", msgCleared: "The table falls silent.",
+            msgMax: "Five cards cast. Clear the table to continue.",
+            msgNoDraw: "Draw your cards before consulting the oracle.",
+            histTitle: "Chronicle of Readings", aiTitle: "Consult the Oracle",
+            lblTopic: "Subject:", lblSituation: "Context:", btnCopy: "Transcribe Prompt", copied: "Inscribed to the ether.",
+            clearHist: "Erase Chronicle",
+            histEmpty: "The chronicle awaits its first revelation."
         },
         th: {
             title: "อาคานัม เอเทอน่า", subtitle: "ตำนานไพ่ทาโรต์",
-            btnShuffle: "สับไพ่ลิขิต", btnDraw: "เปิดไพ่พยากรณ์", btnReset: "ล้างกระดาน", btnHistory: "ประวัติ 📜",
-            msgShuffle: "ดวงดาวกำลังผันแปร...", msgShuffled: "พร้อมสำหรับการทำนาย", msgCleared: "ล้างกระดานแล้ว",
-            histTitle: "ประวัติการเปิดไพ่", aiTitle: "ปรึกษาทวยเทพ (AI)",
-            lblTopic: "หัวข้อ:", lblSituation: "สถานการณ์:", btnCopy: "คัดลอกคำทำนาย", copied: "บันทึกเรียบร้อย!",
-            clearHist: "ล้างประวัติ"
+            btnShuffle: "สับไพ่", btnDraw: "เปิดไพ่", btnReset: "ล้างกระดาน", btnHistory: "บันทึก",
+            msgShuffle: "พลังอาถรรพ์กำลังเคลื่อนไหว...", msgShuffled: "ดวงดาวได้ถูกจัดเรียงใหม่แล้ว", msgCleared: "กระดานเงียบงัน",
+            msgMax: "เปิดไพ่ครบห้าใบแล้ว กรุณาล้างกระดานก่อนเปิดใบใหม่",
+            msgNoDraw: "กรุณาเปิดไพ่ก่อนปรึกษาทวยเทพ",
+            histTitle: "บันทึกการเปิดไพ่", aiTitle: "ปรึกษาทวยเทพ",
+            lblTopic: "หัวข้อ:", lblSituation: "สถานการณ์:", btnCopy: "คัดลอกคำทำนาย", copied: "จารึกสู่อีเธอร์แล้ว",
+            clearHist: "ลบบันทึก",
+            histEmpty: "บันทึกรอคอยการเปิดเผยครั้งแรก"
         }
     },
     // Smart Minor Arcana Meaning Generator
@@ -144,6 +150,37 @@ const AudioSys = {
             this.bgAudio.play().catch(e => console.log("User interaction needed for BGM"));
         } else {
             this.bgAudio.pause();
+        }
+    },
+
+    // Synthesized one-shot sound effects
+    playOneShot(type) {
+        if (!state.soundOn || !this.ctx) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        if (type === 'whoosh') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(300, t);
+            osc.frequency.exponentialRampToValueAtTime(60, t + 0.5);
+            gain.gain.setValueAtTime(0.06, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(t); osc.stop(t + 0.5);
+        } else if (type === 'shuffle') {
+            // Short noise burst
+            const bufSize = this.ctx.sampleRate * 0.3;
+            const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * 0.5;
+            const src = this.ctx.createBufferSource();
+            src.buffer = buf;
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(0.15, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+            src.connect(g); g.connect(this.ctx.destination);
+            src.start(); src.stop(t + 0.3);
         }
     }
 };
@@ -319,31 +356,44 @@ const App = {
             this.showToast(isOn ? "Sound Enabled" : "Sound Muted");
         };
 
-        // Shuffle with Galactic Vortex Effect
+        // Shuffle — Arcane Storm: cards scatter outward
         document.getElementById('btn-shuffle').onclick = () => {
             this.showToast(appData.translations[state.lang].msgShuffle);
 
+            // Measure positions BEFORE clearing
             const cardData = [...document.querySelectorAll('.card-unit')].map(c => ({
                 el: c,
                 rect: c.getBoundingClientRect()
             }));
 
-            // Reset physics & overlay IMMEDIATELY — clean slate for new draws
+            // Reset physics & overlay IMMEDIATELY
             state.drawnCards = []; state.drawnBodies = [];
             document.getElementById('reading-overlay').innerHTML = '';
             Physics.spawnCards();
+            this.updateCardCount();
 
-            // Galaxy vortex overlay
-            const vortexOverlay = document.createElement('div');
-            vortexOverlay.className = 'galaxy-overlay';
-            vortexOverlay.innerHTML = '<div class="galaxy-disc"></div><div class="galaxy-core"></div>';
-            document.body.appendChild(vortexOverlay);
-            setTimeout(() => vortexOverlay.remove(), 1100);
+            // Sound
+            if (state.soundOn) AudioSys.playOneShot('shuffle');
+
+            // Arcane storm overlay — crackling rune ring
+            const stormOverlay = document.createElement('div');
+            stormOverlay.className = 'arcane-storm-overlay';
+            stormOverlay.innerHTML = '<div class="storm-ring"></div><div class="storm-ring storm-ring-2"></div>';
+            document.body.appendChild(stormOverlay);
+            setTimeout(() => stormOverlay.remove(), 900);
 
             if (cardData.length > 0) {
-                cardData.forEach(cd => {
+                cardData.forEach((cd, i) => {
                     const c = cd.el;
                     const r = cd.rect;
+                    // Give each card a random scatter direction via CSS vars
+                    const angle = Math.random() * 360;
+                    const dist = 120 + Math.random() * 160;
+                    const dx = Math.cos(angle * Math.PI / 180) * dist;
+                    const dy = Math.sin(angle * Math.PI / 180) * dist;
+                    c.style.setProperty('--scatter-x', `${dx}px`);
+                    c.style.setProperty('--scatter-y', `${dy}px`);
+                    c.style.setProperty('--scatter-rot', `${(Math.random() - 0.5) * 720}deg`);
                     Object.assign(c.style, {
                         position: 'fixed',
                         top: `${r.top}px`,
@@ -357,16 +407,16 @@ const App = {
                     });
                     document.body.appendChild(c);
                     c.getBoundingClientRect(); // force reflow
-                    c.classList.add('vortex-suck');
+                    c.classList.add('arcane-scatter');
                 });
-                setTimeout(() => cardData.forEach(cd => cd.el.remove()), 1100);
+                setTimeout(() => cardData.forEach(cd => cd.el.remove()), 900);
             } else {
                 document.body.classList.add('shake-blur');
                 setTimeout(() => document.body.classList.remove('shake-blur'), 700);
             }
 
             Physics.shakeWorld();
-            setTimeout(() => this.showToast(appData.translations[state.lang].msgShuffled), 1200);
+            setTimeout(() => this.showToast(appData.translations[state.lang].msgShuffled), 1000);
             if (state.soundOn) AudioSys.updateBgMusic();
         };
 
@@ -383,7 +433,14 @@ const App = {
         document.getElementById('close-history').onclick = () => {
             document.getElementById('history-modal').classList.remove('visible');
         };
+        // Backdrop click closes history
+        const backdrop = document.getElementById('history-backdrop');
+        if (backdrop) backdrop.onclick = () => {
+            document.getElementById('history-modal').classList.remove('visible');
+        };
         document.getElementById('btn-copy-ai').onclick = () => this.copyToAI();
+        const btnAiRead = document.getElementById('btn-ai-read');
+        if (btnAiRead) btnAiRead.onclick = () => this.askOracle();
     },
 
     setLang(l) {
@@ -408,8 +465,28 @@ const App = {
         if (clrBtn) clrBtn.textContent = t.clearHist;
     },
 
+    updateCardCount() {
+        const badge = document.getElementById('card-count-badge');
+        if (!badge) return;
+        const count = state.drawnCards.length;
+        if (count === 0) {
+            badge.textContent = '';
+            badge.classList.remove('visible');
+        } else {
+            badge.textContent = `${count} / 5`;
+            badge.classList.add('visible');
+            badge.classList.toggle('badge-max', count >= 5);
+        }
+        // Disable/enable draw button
+        const btnDraw = document.getElementById('btn-draw');
+        if (btnDraw) btnDraw.disabled = count >= 5;
+    },
+
     actionDraw() {
-        if (state.drawnCards.length >= 5) { this.showToast("Max 5 Cards!"); return; }
+        if (state.drawnCards.length >= 5) {
+            this.showToast(appData.translations[state.lang].msgMax);
+            return;
+        }
 
         const available = state.deckBodies.filter(b => !b.isStatic && !state.drawnBodies.includes(b));
         if (available.length === 0) return;
@@ -441,12 +518,10 @@ const App = {
         `;
         el.dataset.cardIndex = state.drawnCards.length - 1;
         overlay.appendChild(el);
-        // Scroll to new
         el.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'center' });
 
-        // Persist to history (survives reset)
         state.history.push(cardObj);
-
+        this.updateCardCount();
         AudioSys.playDraw();
     },
 
@@ -459,8 +534,9 @@ const App = {
         // ── Reset state, overlay & physics IMMEDIATELY ──
         state.drawnCards = [];
         state.drawnBodies = [];
-        document.getElementById('reading-overlay').innerHTML = ''; // clean overlay NOW
+        document.getElementById('reading-overlay').innerHTML = '';
         Physics.spawnCards();
+        this.updateCardCount();
 
         if (cardData.length === 0) return;
 
@@ -513,6 +589,15 @@ const App = {
         }
         if (clearBtn) clearBtn.textContent = appData.translations[state.lang].clearHist;
 
+        // Empty state placeholder
+        if (state.history.length === 0) {
+            const empty = document.createElement('li');
+            empty.className = 'history-empty';
+            empty.textContent = appData.translations[state.lang].histEmpty;
+            list.appendChild(empty);
+            return;
+        }
+
         // Use persistent history (survives Reset)
         state.history.forEach((c, i) => {
             const li = document.createElement('li'); li.className = 'history-item';
@@ -540,19 +625,29 @@ const App = {
     },
 
     copyToAI() {
+        if (state.drawnCards.length === 0) {
+            this.showToast(appData.translations[state.lang].msgNoDraw);
+            return;
+        }
         const topic = document.getElementById('ai-topic').value;
         const sit = document.getElementById('ai-situation').value;
-        const cards = state.drawnCards.map((c, i) => `${i + 1}. ${c.nameTH} (${c.reversed ? 'กลับหัว' : 'หัวตั้ง'})`).join(', ');
 
-        const prompt = `รับบทเป็นหมอดูไพ่ทาโรต์ผู้เชี่ยวชาญที่มีประสบการณ์กว่า 100 ปีทำนายดวงชะตาจากไพ่ที่ฉันจับได้ดังนี้:
+        let prompt;
+        if (state.lang === 'th') {
+            const cards = state.drawnCards.map((c, i) => `${i + 1}. ${c.nameTH} (${c.reversed ? 'กลับหัว' : 'หัวตั้ง'})`).join(', ');
+            prompt = `รับบทเป็นหมอดูไพ่ทาโรต์ผู้เชี่ยวชาญ ทำนายดวงชะตาจากไพ่ที่จับได้:
 ไพ่ที่ได้: ${cards}
-หัวข้อคำถาม: ${topic}
-สถานการณ์ปัจจุบัน: ${sit}
-สิ่งที่ต้องการ:
-1. ความหมายของไพ่แต่ละใบในบริบทนี้
-2. ความเชื่อมโยงของไพ่ทั้งหมด (Storytelling)
-3. คำแนะนำที่ทำได้จริง (Actionable Advice)
-ขอภาษาที่เป็นกันเอง เข้าใจง่าย และตรงไปตรงมา`;
+หัวข้อ: ${topic}
+สถานการณ์: ${sit || 'ไม่ระบุ'}
+ขอ: 1.ความหมายแต่ละใบ 2.ความเชื่อมโยง 3.คำแนะนำ — ภาษาไทยกันเอง`;
+        } else {
+            const cards = state.drawnCards.map((c, i) => `${i + 1}. ${c.nameEN} (${c.reversed ? 'Reversed' : 'Upright'})`).join(', ');
+            prompt = `You are a wise tarot oracle. Read these cards:
+Cards: ${cards}
+Topic: ${topic}
+Situation: ${sit || 'Not specified'}
+Provide: 1. Individual meanings 2. Story connecting them 3. Actionable advice. Warm, mystical tone.`;
+        }
 
         navigator.clipboard.writeText(prompt).then(() => this.showToast(appData.translations[state.lang].copied));
     },
@@ -667,14 +762,21 @@ ${state.lang === 'th' ? 'ตอบเป็นภาษาไทยทั้ง�
 
     showToast(msg) {
         const el = document.getElementById('status-display');
-        el.textContent = msg; el.classList.add('visible');
-        setTimeout(() => el.classList.remove('visible'), 2000);
+        el.textContent = msg;
+        el.classList.add('visible');
+        // Proportional duration: 2s base + 40ms per character, max 4s
+        const duration = Math.min(4000, Math.max(2000, msg.length * 40));
+        clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(() => el.classList.remove('visible'), duration);
     },
 
     showDetail(cardObj) {
         if (!cardObj) return;
         const overlay = document.getElementById('card-detail-overlay');
-        document.getElementById('detail-img').src = cardObj.img;
+        const imgEl = document.getElementById('detail-img');
+        imgEl.classList.remove('loaded');
+        imgEl.onload = () => imgEl.classList.add('loaded');
+        imgEl.src = cardObj.img;
         document.getElementById('detail-title').textContent = state.lang === 'th' ? cardObj.nameTH : cardObj.nameEN;
 
         const orientEl = document.getElementById('detail-orient');
