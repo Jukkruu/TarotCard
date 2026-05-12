@@ -344,18 +344,6 @@ const App = {
     },
 
     setupEvents() {
-        document.getElementById('lang-en').onclick = () => this.setLang('en');
-        document.getElementById('lang-th').onclick = () => this.setLang('th');
-
-        // Sound Switch (Glassmorphism button)
-        const btnSound = document.getElementById('btn-sound');
-        btnSound.onclick = () => {
-            const isOn = AudioSys.toggle();
-            btnSound.textContent = isOn ? "🔊" : "🔇";
-            btnSound.classList.toggle('sound-on', isOn);
-            this.showToast(isOn ? "Sound Enabled" : "Sound Muted");
-        };
-
         // Shuffle — Arcane Storm: cards scatter outward
         document.getElementById('btn-shuffle').onclick = () => {
             this.showToast(appData.translations[state.lang].msgShuffle);
@@ -438,18 +426,12 @@ const App = {
         if (backdrop) backdrop.onclick = () => {
             document.getElementById('history-modal').classList.remove('visible');
         };
-        document.getElementById('btn-copy-ai').onclick = () => this.copyToAI();
+
         const btnAiRead = document.getElementById('btn-ai-read');
         if (btnAiRead) btnAiRead.onclick = () => this.askOracle();
     },
 
-    setLang(l) {
-        state.lang = l;
-        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(`lang-${l}`).classList.add('active');
-        this.updateUI();
-        this.renderHistory(); // Re-render for text update if open
-    },
+
 
     updateUI() {
         const t = appData.translations[state.lang];
@@ -459,7 +441,6 @@ const App = {
         set('btn-reset', t.btnReset); set('btn-history', t.btnHistory);
         set('history-title', t.histTitle); set('ai-title', t.aiTitle);
         set('lbl-topic', t.lblTopic); set('lbl-situation', t.lblSituation);
-        set('btn-copy-ai', t.btnCopy);
 
         const clrBtn = document.getElementById('btn-clear-hist');
         if (clrBtn) clrBtn.textContent = t.clearHist;
@@ -624,7 +605,7 @@ const App = {
         navigator.clipboard.writeText(txt).then(() => this.showToast("Card copied!"));
     },
 
-    copyToAI() {
+    _copyToAI_removed() { // dead code removed
         if (state.drawnCards.length === 0) {
             this.showToast(appData.translations[state.lang].msgNoDraw);
             return;
