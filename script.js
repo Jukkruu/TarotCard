@@ -113,26 +113,31 @@ const AudioSys = {
         this.bgAudio = document.getElementById('bg-music');
     },
 
-    // Magic Chime Sound
+    // Reveal chime — a shimmering layered bell with a sparkle tail
     playDraw() {
         if (!state.soundOn || !this.ctx) return;
         if (this.ctx.state === 'suspended') this.ctx.resume();
 
         const t = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+        const master = this.ctx.createGain();
+        master.gain.value = 0.9;
+        master.connect(this.ctx.destination);
 
-        // Ethereal Sound Design
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, t); // A4
-        osc.frequency.exponentialRampToValueAtTime(880, t + 0.1); // Slide Up
-        osc.frequency.exponentialRampToValueAtTime(1760, t + 0.6); // High sparkle
-
-        gain.gain.setValueAtTime(0.05, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
-
-        osc.connect(gain); gain.connect(this.ctx.destination);
-        osc.start(); osc.stop(t + 0.6);
+        // A bright open chord (C5 · G5 · C6 · G6) rung in quick succession
+        const freqs = [523.25, 783.99, 1046.5, 1567.98];
+        freqs.forEach((f, i) => {
+            const osc = this.ctx.createOscillator();
+            const g = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, t);
+            osc.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.45);
+            const peak = 0.07 / (i + 1);
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(peak, t + 0.02 + i * 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7 + i * 0.12);
+            osc.connect(g); g.connect(master);
+            osc.start(t + i * 0.02); osc.stop(t + 1.0 + i * 0.12);
+        });
     },
 
     toggle() {
@@ -181,6 +186,15 @@ const AudioSys = {
             g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
             src.connect(g); g.connect(this.ctx.destination);
             src.start(); src.stop(t + 0.3);
+        } else if (type === 'dissolve') {
+            // Gentle descending shimmer for the stardust reset
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(880, t);
+            osc.frequency.exponentialRampToValueAtTime(180, t + 0.7);
+            gain.gain.setValueAtTime(0.07, t);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(t); osc.stop(t + 0.8);
         }
     }
 };
@@ -344,9 +358,11 @@ const App = {
     },
 
     setupEvents() {
-        // Shuffle — Arcane Storm: cards scatter outward
+        // Shuffle — Astral Vortex: cards spiral into a glowing galaxy core
         document.getElementById('btn-shuffle').onclick = () => {
             this.showToast(appData.translations[state.lang].msgShuffle);
+
+            const vx = window.innerWidth / 2, vy = window.innerHeight / 2;
 
             // Measure positions BEFORE clearing
             const cardData = [...document.querySelectorAll('.card-unit')].map(c => ({
@@ -360,28 +376,22 @@ const App = {
             Physics.spawnCards();
             this.updateCardCount();
 
-            // Sound
             if (state.soundOn) AudioSys.playOneShot('shuffle');
 
-            // Arcane storm overlay — crackling rune ring
-            const stormOverlay = document.createElement('div');
-            stormOverlay.className = 'arcane-storm-overlay';
-            stormOverlay.innerHTML = '<div class="storm-ring"></div><div class="storm-ring storm-ring-2"></div>';
-            document.body.appendChild(stormOverlay);
-            setTimeout(() => stormOverlay.remove(), 900);
-
             if (cardData.length > 0) {
-                cardData.forEach((cd, i) => {
-                    const c = cd.el;
-                    const r = cd.rect;
-                    // Give each card a random scatter direction via CSS vars
-                    const angle = Math.random() * 360;
-                    const dist = 120 + Math.random() * 160;
-                    const dx = Math.cos(angle * Math.PI / 180) * dist;
-                    const dy = Math.sin(angle * Math.PI / 180) * dist;
-                    c.style.setProperty('--scatter-x', `${dx}px`);
-                    c.style.setProperty('--scatter-y', `${dy}px`);
-                    c.style.setProperty('--scatter-rot', `${(Math.random() - 0.5) * 720}deg`);
+                // Spinning galaxy core at screen center
+                const galaxy = document.createElement('div');
+                galaxy.className = 'galaxy-overlay';
+                galaxy.innerHTML = '<div class="galaxy-disc"></div><div class="galaxy-core"></div>';
+                document.body.appendChild(galaxy);
+                setTimeout(() => galaxy.remove(), 950);
+
+                cardData.forEach(cd => {
+                    const c = cd.el, r = cd.rect;
+                    const ccx = r.left + r.width / 2, ccy = r.top + r.height / 2;
+                    c.style.transform = '';
+                    c.style.setProperty('--vx', `${vx - ccx}px`);
+                    c.style.setProperty('--vy', `${vy - ccy}px`);
                     Object.assign(c.style, {
                         position: 'fixed',
                         top: `${r.top}px`,
@@ -389,22 +399,33 @@ const App = {
                         width: `${r.width}px`,
                         height: `${r.height}px`,
                         margin: '0',
-                        zIndex: '300',
+                        zIndex: '320',
                         pointerEvents: 'none',
                         overflow: 'visible'
                     });
                     document.body.appendChild(c);
                     c.getBoundingClientRect(); // force reflow
-                    c.classList.add('arcane-scatter');
+                    c.classList.add('vortex-fly');
                 });
-                setTimeout(() => cardData.forEach(cd => cd.el.remove()), 900);
+
+                // Shockwave + sparks once the cards collapse into the core
+                setTimeout(() => {
+                    const ring1 = document.createElement('div'); ring1.className = 'shock-ring';
+                    const ring2 = document.createElement('div'); ring2.className = 'shock-ring delay';
+                    document.body.appendChild(ring1); document.body.appendChild(ring2);
+                    this.spawnSparkles(vx, vy, 20, '#ffd700', { minDist: 60, spread: 200 });
+                    if (state.soundOn) AudioSys.playOneShot('whoosh');
+                    setTimeout(() => { ring1.remove(); ring2.remove(); }, 950);
+                }, 720);
+
+                setTimeout(() => cardData.forEach(cd => cd.el.remove()), 950);
             } else {
                 document.body.classList.add('shake-blur');
                 setTimeout(() => document.body.classList.remove('shake-blur'), 700);
             }
 
             Physics.shakeWorld();
-            setTimeout(() => this.showToast(appData.translations[state.lang].msgShuffled), 1000);
+            setTimeout(() => this.showToast(appData.translations[state.lang].msgShuffled), 1100);
             if (state.soundOn) AudioSys.updateBgMusic();
         };
 
@@ -480,21 +501,26 @@ const App = {
         state.drawnBodies.push(body); state.drawnCards.push(cardObj);
         Matter.Body.setPosition(body, { x: -9999, y: -9999 }); Matter.Body.setStatic(body, true);
 
-        // Render DOM
+        // Render DOM — face-down card that flips to reveal
         const overlay = document.getElementById('reading-overlay');
         const el = document.createElement('div');
-        el.className = 'card-unit'; // Matches CSS .card-unit
+        el.className = 'card-unit';
 
         const title = state.lang === 'th' ? cardObj.nameTH : cardObj.nameEN;
         const mean = state.lang === 'th' ? cardObj.mTH : cardObj.mEN;
         const orient = isRev ? (state.lang === 'th' ? "กลับหัว" : "REVERSED") : (state.lang === 'th' ? "หัวตั้ง" : "UPRIGHT");
 
         el.innerHTML = `
-            <div class="card-image-area"><img src="${cardObj.img}"></div>
-            <div class="card-text-area">
-                <h3 class="card-title">${title}</h3>
-                <div class="card-orientation ${isRev ? 'reversed' : 'upright'}">${orient}</div>
-                <div class="card-keywords">${mean}</div>
+            <div class="card-flip">
+                <div class="flip-face flip-back"><div class="card-back-design"></div></div>
+                <div class="flip-face flip-front">
+                    <div class="card-image-area"><img src="${cardObj.img}"></div>
+                    <div class="card-text-area">
+                        <h3 class="card-title">${title}</h3>
+                        <div class="card-orientation ${isRev ? 'reversed' : 'upright'}">${orient}</div>
+                        <div class="card-keywords">${mean}</div>
+                    </div>
+                </div>
             </div>
             <span class="cu-corner tl"></span>
             <span class="cu-corner tr"></span>
@@ -507,7 +533,50 @@ const App = {
 
         state.history.push(cardObj);
         this.updateCardCount();
-        AudioSys.playDraw();
+
+        // Flip reveal: let the card settle, flip it, then burst at the half-turn
+        setTimeout(() => {
+            el.classList.add('revealed');
+            setTimeout(() => {
+                const r = el.getBoundingClientRect();
+                const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+                this.revealBurst(cx, cy);
+                this.spawnSparkles(cx, cy, 12, '#ffd700');
+                AudioSys.playDraw();
+            }, 470);
+        }, 360);
+    },
+
+    /* --- FX HELPERS --- */
+    revealBurst(x, y) {
+        const b = document.createElement('div');
+        b.className = 'reveal-burst';
+        b.style.left = `${x}px`;
+        b.style.top = `${y}px`;
+        document.body.appendChild(b);
+        setTimeout(() => b.remove(), 750);
+    },
+
+    spawnSparkles(x, y, count, color, opts = {}) {
+        for (let i = 0; i < count; i++) {
+            const s = document.createElement('div');
+            s.className = 'spark';
+            const ang = opts.upward
+                ? (-Math.PI / 2 + (Math.random() - 0.5) * 1.7)
+                : (Math.random() * Math.PI * 2);
+            const dist = (opts.minDist || 40) + Math.random() * (opts.spread || 90);
+            const ox = opts.scatter ? (Math.random() - 0.5) * opts.scatter : 0;
+            const oy = opts.scatter ? (Math.random() - 0.5) * opts.scatter : 0;
+            s.style.left = `${x + ox}px`;
+            s.style.top = `${y + oy}px`;
+            s.style.setProperty('--dx', `${Math.cos(ang) * dist}px`);
+            s.style.setProperty('--dy', `${Math.sin(ang) * dist}px`);
+            s.style.setProperty('--s', `${2 + Math.random() * 4}px`);
+            s.style.setProperty('--dur', `${0.7 + Math.random() * 0.7}s`);
+            s.style.setProperty('--spark-color', color);
+            document.body.appendChild(s);
+            setTimeout(() => s.remove(), 1600);
+        }
     },
 
     actionReset() {
@@ -525,16 +594,17 @@ const App = {
 
         if (cardData.length === 0) return;
 
-        // Screen flash
+        // Soft violet flash
         const flash = document.createElement('div');
-        flash.className = 'burn-flash';
+        flash.className = 'stardust-flash';
         document.body.appendChild(flash);
-        setTimeout(() => flash.remove(), 800);
+        setTimeout(() => flash.remove(), 900);
 
-        // Float cards at their exact screen pos
+        // Dissolve each card into rising stardust
         cardData.forEach(cd => {
             const c = cd.el;
             const r = cd.rect;
+            c.style.transform = '';
             Object.assign(c.style, {
                 position: 'fixed',
                 top: `${r.top}px`,
@@ -548,14 +618,20 @@ const App = {
             });
             document.body.appendChild(c);
             c.getBoundingClientRect();
-            c.classList.add('alchemical-burn');
+            c.classList.add('stardust-out');
+
+            // Rising stardust particles drawn from across the card face
+            const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+            this.spawnSparkles(cx, cy, 12, '#b58cff', {
+                upward: true, minDist: 50, spread: 120, scatter: Math.max(r.width, r.height)
+            });
         });
 
-        if (state.soundOn) AudioSys.playOneShot('whoosh');
+        if (state.soundOn) AudioSys.playOneShot('dissolve');
         this.showToast(appData.translations[state.lang].msgCleared);
 
-        // Remove burned cards after animation
-        setTimeout(() => cardData.forEach(cd => cd.el.remove()), 1600);
+        // Remove dissolved cards after animation
+        setTimeout(() => cardData.forEach(cd => cd.el.remove()), 1200);
     },
 
     renderHistory() {
