@@ -329,7 +329,7 @@ body {
 /* --- HEADER --- */
 .glass-header {
     text-align: center;
-    padding: 2rem 0;
+    padding: 1.4rem 0 0.8rem;
     width: 100%;
     position: absolute;
     top: 0;
@@ -517,11 +517,13 @@ button.action-btn:disabled {
 /* --- CARD DISPLAY --- */
 #reading-overlay {
     position: fixed;
-    top: 50%;
+    /* Sit in the band between the header and the control bar so cards
+       never crush into the title / subtitle. */
+    top: 215px;
+    bottom: 115px;
     left: 50%;
-    transform: translate(-50%, -55%);
+    transform: translateX(-50%);
     width: 100%;
-    height: auto;
     pointer-events: none;
     z-index: 80;
     display: flex;
