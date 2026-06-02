@@ -100,8 +100,9 @@ const appData = {
     }
 };
 
-let state = { lang: 'en', soundOn: false, drawnCards: [], deckBodies: [], drawnBodies: [], history: [], bgmPlaying: false };
+let state = { lang: 'en', soundOn: false, drawnCards: [], deckBodies: [], drawnBodies: [], history: [], bgmPlaying: false, welcomeSeen: false };
 const fullDeck = appData.generateDeck();
+const STORE_KEY = 'arcanum_state_v1';
 
 /* --- 2. ADVANCED AUDIO SYSTEM --- */
 const AudioSys = {
@@ -299,13 +300,22 @@ const Physics = {
 /* --- 4. CORE APP --- */
 const App = {
     init() {
+        this.loadState();
         Physics.init(); Physics.spawnCards();
         this.setupEvents(); this.updateUI();
         this.spawnRunes();
+        this.setupKeyboard();
+
+        // Skip the welcome modal on return visits
+        if (state.welcomeSeen) {
+            const wm = document.getElementById('welcome-modal');
+            if (wm) wm.classList.remove('visible');
+        }
 
         // Welcome modal dismiss
         document.getElementById('welcome-dismiss').addEventListener('click', () => {
             document.getElementById('welcome-modal').classList.remove('visible');
+            state.welcomeSeen = true; this.saveState();
             // Init audio on this user gesture (required by browsers)
             AudioSys.init();
             if (state.soundOn) AudioSys.updateBgMusic();
@@ -488,6 +498,10 @@ const App = {
         const btnAiRead = document.getElementById('btn-ai-read');
         if (btnAiRead) btnAiRead.onclick = () => this.askOracle();
 
+        // Card of the Day
+        const btnDaily = document.getElementById('btn-daily');
+        if (btnDaily) btnDaily.onclick = () => this.showDailyCard();
+
         // Sound toggle (works on desktop & mobile)
         const btnSound = document.getElementById('btn-sound');
         if (btnSound) btnSound.onclick = () => {
@@ -495,6 +509,7 @@ const App = {
             btnSound.textContent = on ? '🔊' : '🔇';
             btnSound.classList.toggle('muted', !on);
             btnSound.setAttribute('aria-label', on ? 'Mute sound' : 'Unmute sound');
+            this.saveState();
         };
 
         // Language toggle EN ⇄ TH
@@ -505,6 +520,7 @@ const App = {
             this.refreshCardLang();
             const histModal = document.getElementById('history-modal');
             if (histModal && histModal.classList.contains('visible')) this.renderHistory();
+            this.saveState();
         };
     },
 
@@ -623,6 +639,7 @@ const App = {
         el.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'center' });
 
         state.history.push(cardObj);
+        this.saveState();
         this.updateCardCount();
 
         // Flip reveal: let the card settle, flip it, then burst at the half-turn
@@ -649,13 +666,82 @@ const App = {
         setTimeout(() => b.remove(), 750);
     },
 
+    /* --- PERSISTENCE --- */
+    loadState() {
+        try {
+            const raw = localStorage.getItem(STORE_KEY);
+            if (!raw) return;
+            const s = JSON.parse(raw);
+            if (Array.isArray(s.history)) state.history = s.history;
+            if (s.lang === 'en' || s.lang === 'th') state.lang = s.lang;
+            if (typeof s.soundOn === 'boolean') state.soundOn = s.soundOn;
+            state.welcomeSeen = !!s.welcomeSeen;
+        } catch (e) { /* private mode / corrupt — ignore */ }
+    },
+
+    saveState() {
+        try {
+            localStorage.setItem(STORE_KEY, JSON.stringify({
+                history: state.history.slice(-120),
+                lang: state.lang,
+                soundOn: state.soundOn,
+                welcomeSeen: state.welcomeSeen
+            }));
+        } catch (e) { /* storage full / blocked — ignore */ }
+    },
+
+    /* --- KEYBOARD SHORTCUTS (desktop power-use) --- */
+    setupKeyboard() {
+        document.addEventListener('keydown', e => {
+            const tag = (e.target.tagName || '').toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+            if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+            if (e.key === 'Escape') {
+                this.hideDetail();
+                const hm = document.getElementById('history-modal');
+                if (hm) hm.classList.remove('visible');
+                const wm = document.getElementById('welcome-modal');
+                if (wm && wm.classList.contains('visible')) {
+                    wm.classList.remove('visible');
+                    state.welcomeSeen = true; this.saveState();
+                }
+                return;
+            }
+            const click = id => { const el = document.getElementById(id); if (el && !el.disabled) el.click(); };
+            switch (e.key.toLowerCase()) {
+                case 's': click('btn-shuffle'); break;
+                case 'd': click('btn-draw'); break;
+                case 'r': click('btn-reset'); break;
+                case 'h': click('btn-history'); break;
+                case 'c': this.showDailyCard(); break;
+            }
+        });
+    },
+
+    /* --- CARD OF THE DAY (deterministic per calendar day) --- */
+    showDailyCard() {
+        const d = new Date();
+        const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+        const idx = (seed * 9301 + 49297) % fullDeck.length;
+        const reversed = ((Math.floor(seed / 7)) % 2) === 1;
+        const cardObj = { ...fullDeck[idx], reversed };
+        this.showDetail(cardObj);
+        const typeEl = document.getElementById('detail-type');
+        if (typeEl) {
+            const label = state.lang === 'th' ? '🌙 ไพ่ประจำวัน' : '🌙 Card of the Day';
+            const kind = cardObj.type === 'Major' ? '✦ Major Arcana' : '✧ Minor Arcana';
+            typeEl.textContent = `${label} · ${kind}`;
+        }
+    },
+
     spawnRunes() {
         const layer = document.getElementById('runes-layer');
         if (!layer) return;
         const glyphs = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓',
             '☿', '♀', '♁', '♂', '♃', '♄', '☉', '☽', '✶', '✦', '⛤', '☥', '⚹'];
         const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-        const count = touch ? 10 : 18;
+        const count = touch ? 22 : 40;
         for (let i = 0; i < count; i++) {
             const r = document.createElement('span');
             r.className = 'rune-float';
@@ -789,7 +875,7 @@ const App = {
             clearBtn.id = 'btn-clear-hist';
             clearBtn.className = 'btn-clear-hist';
             clearBtn.textContent = appData.translations[state.lang].clearHist;
-            clearBtn.onclick = () => { state.history = []; this.renderHistory(); };
+            clearBtn.onclick = () => { state.history = []; this.saveState(); this.renderHistory(); };
             headerEl.insertBefore(clearBtn, headerEl.querySelector('.close-btn'));
         }
         if (clearBtn) clearBtn.textContent = appData.translations[state.lang].clearHist;

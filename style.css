@@ -1209,6 +1209,10 @@ textarea.mystic-input {
     animation-delay: 0.8s;
 }
 
+.welcome-steps li:nth-child(6) {
+    animation-delay: 0.95s;
+}
+
 @keyframes stepFadeIn {
     from {
         transform: translateX(-15px);
@@ -3038,8 +3042,8 @@ textarea.mystic-input {
     position: fixed;
     left: 50%;
     top: 50%;
-    width: 360px;
-    height: 360px;
+    width: 520px;
+    height: 520px;
     transform: translate(-50%, -50%);
     z-index: 185;
     pointer-events: none;
@@ -3059,19 +3063,19 @@ textarea.mystic-input {
 }
 
 .oracle-sigil .r2 {
-    inset: 42px;
+    inset: 60px;
     border: 1px solid rgba(180, 120, 255, 0.55);
     animation: sigSpin 5s linear infinite reverse;
 }
 
 .oracle-sigil .r3 {
-    inset: 78px;
+    inset: 112px;
     border: 1px solid rgba(212, 175, 55, 0.35);
 }
 
 .oracle-sigil .sig-ticks {
     position: absolute;
-    inset: 16px;
+    inset: 22px;
     border-radius: 50%;
     background: repeating-conic-gradient(from 0deg, rgba(212, 175, 55, 0.45) 0deg 1.2deg, transparent 1.2deg 15deg);
     animation: sigSpin 13s linear infinite;
@@ -3082,8 +3086,8 @@ textarea.mystic-input {
 .oracle-sigil .sig-eye {
     position: absolute;
     inset: 0;
-    background: var(--oracle-eye) no-repeat center / 130px 130px;
-    filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.8));
+    background: var(--oracle-eye) no-repeat center / 180px 180px;
+    filter: drop-shadow(0 0 22px rgba(255, 215, 0, 0.85));
     animation: eyeFlash 1.2s ease-out forwards;
 }
 
@@ -3139,19 +3143,40 @@ textarea.mystic-input {
     }
 
     .oracle-sigil {
-        width: 240px;
-        height: 240px;
+        width: 340px;
+        height: 340px;
     }
 
     .oracle-sigil .r2 {
-        inset: 28px;
+        inset: 40px;
     }
 
     .oracle-sigil .r3 {
-        inset: 52px;
+        inset: 74px;
     }
 
     .oracle-sigil .sig-eye {
-        background-size: 88px 88px;
+        background-size: 120px 120px;
+    }
+}
+
+/* ============================================================
+   ✦ ACCESSIBILITY — Respect prefers-reduced-motion ✦
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    /* Drop purely-decorative perpetual motion entirely */
+    #runes-layer,
+    #mandala-bg {
+        display: none;
     }
 }
