@@ -317,6 +317,8 @@ const App = {
         // Auto-enable sound on mobile (button is hidden)
         if (isTouchDevice) {
             state.soundOn = true;
+            const sb = document.getElementById('btn-sound');
+            if (sb) { sb.textContent = '🔊'; sb.classList.remove('muted'); }
             document.body.addEventListener('touchstart', () => {
                 AudioSys.init();
                 AudioSys.updateBgMusic();
@@ -379,9 +381,14 @@ const App = {
             if (state.soundOn) AudioSys.playOneShot('shuffle');
 
             if (cardData.length > 0) {
-                // Spinning galaxy core at screen center
+                // Converging energy rays + a powerful spinning galaxy core
+                const rays = document.createElement('div');
+                rays.className = 'vortex-rays';
+                document.body.appendChild(rays);
+                setTimeout(() => rays.remove(), 900);
+
                 const galaxy = document.createElement('div');
-                galaxy.className = 'galaxy-overlay';
+                galaxy.className = 'galaxy-overlay strong';
                 galaxy.innerHTML = '<div class="galaxy-disc"></div><div class="galaxy-core"></div>';
                 document.body.appendChild(galaxy);
                 setTimeout(() => galaxy.remove(), 950);
@@ -408,15 +415,19 @@ const App = {
                     c.classList.add('vortex-fly');
                 });
 
-                // Shockwave + sparks once the cards collapse into the core
+                // Collapse: blinding flash, camera quake, triple shockwave, spark storm
                 setTimeout(() => {
-                    const ring1 = document.createElement('div'); ring1.className = 'shock-ring';
-                    const ring2 = document.createElement('div'); ring2.className = 'shock-ring delay';
-                    document.body.appendChild(ring1); document.body.appendChild(ring2);
-                    this.spawnSparkles(vx, vy, 20, '#ffd700', { minDist: 60, spread: 200 });
+                    this.screenQuake();
+                    this.screenFlash();
+                    const r1 = document.createElement('div'); r1.className = 'shock-ring';
+                    const r2 = document.createElement('div'); r2.className = 'shock-ring delay';
+                    const r3 = document.createElement('div'); r3.className = 'shock-ring';
+                    r3.style.animationDelay = '0.26s';
+                    document.body.append(r1, r2, r3);
+                    this.spawnSparkles(vx, vy, 44, '#ffd700', { minDist: 80, spread: 320, shard: true });
                     if (state.soundOn) AudioSys.playOneShot('whoosh');
-                    setTimeout(() => { ring1.remove(); ring2.remove(); }, 950);
-                }, 720);
+                    setTimeout(() => { r1.remove(); r2.remove(); r3.remove(); }, 1000);
+                }, 700);
 
                 setTimeout(() => cardData.forEach(cd => cd.el.remove()), 950);
             } else {
@@ -450,6 +461,25 @@ const App = {
 
         const btnAiRead = document.getElementById('btn-ai-read');
         if (btnAiRead) btnAiRead.onclick = () => this.askOracle();
+
+        // Sound toggle (works on desktop & mobile)
+        const btnSound = document.getElementById('btn-sound');
+        if (btnSound) btnSound.onclick = () => {
+            const on = AudioSys.toggle();
+            btnSound.textContent = on ? '🔊' : '🔇';
+            btnSound.classList.toggle('muted', !on);
+            btnSound.setAttribute('aria-label', on ? 'Mute sound' : 'Unmute sound');
+        };
+
+        // Language toggle EN ⇄ TH
+        const btnLang = document.getElementById('btn-lang');
+        if (btnLang) btnLang.onclick = () => {
+            state.lang = state.lang === 'en' ? 'th' : 'en';
+            this.updateUI();
+            this.refreshCardLang();
+            const histModal = document.getElementById('history-modal');
+            if (histModal && histModal.classList.contains('visible')) this.renderHistory();
+        };
     },
 
 
@@ -465,6 +495,41 @@ const App = {
 
         const clrBtn = document.getElementById('btn-clear-hist');
         if (clrBtn) clrBtn.textContent = t.clearHist;
+
+        // Top-bar controls
+        set('btn-lang', state.lang.toUpperCase());
+        const sb = document.getElementById('btn-sound');
+        if (sb) {
+            sb.textContent = state.soundOn ? '🔊' : '🔇';
+            sb.classList.toggle('muted', !state.soundOn);
+        }
+    },
+
+    refreshCardLang() {
+        document.querySelectorAll('#reading-overlay .card-unit').forEach(el => {
+            const c = state.drawnCards[parseInt(el.dataset.cardIndex)];
+            if (!c) return;
+            const orient = c.reversed
+                ? (state.lang === 'th' ? 'กลับหัว' : 'REVERSED')
+                : (state.lang === 'th' ? 'หัวตั้ง' : 'UPRIGHT');
+            const t = el.querySelector('.card-title');
+            const k = el.querySelector('.card-keywords');
+            const o = el.querySelector('.card-orientation');
+            if (t) t.textContent = state.lang === 'th' ? c.nameTH : c.nameEN;
+            if (k) k.textContent = state.lang === 'th' ? c.mTH : c.mEN;
+            if (o) o.textContent = orient;
+        });
+        // Live-update an open detail overlay
+        const detail = document.getElementById('card-detail-overlay');
+        if (detail.classList.contains('visible') && this._detailCard) {
+            const c = this._detailCard;
+            document.getElementById('detail-title').textContent = state.lang === 'th' ? c.nameTH : c.nameEN;
+            document.getElementById('detail-meaning').textContent = state.lang === 'th' ? c.mTH : c.mEN;
+            const oEl = document.getElementById('detail-orient');
+            oEl.textContent = c.reversed
+                ? (state.lang === 'th' ? '⟲ กลับหัว' : '⟲ REVERSED')
+                : (state.lang === 'th' ? '△ หัวตั้ง' : '△ UPRIGHT');
+        }
     },
 
     updateCardCount() {
@@ -557,10 +622,25 @@ const App = {
         setTimeout(() => b.remove(), 750);
     },
 
+    screenQuake() {
+        document.body.classList.remove('fx-quake');
+        void document.body.offsetWidth; // restart animation
+        document.body.classList.add('fx-quake');
+        clearTimeout(this._quakeTimer);
+        this._quakeTimer = setTimeout(() => document.body.classList.remove('fx-quake'), 560);
+    },
+
+    screenFlash(violet = false) {
+        const f = document.createElement('div');
+        f.className = 'fx-flash' + (violet ? ' violet' : '');
+        document.body.appendChild(f);
+        setTimeout(() => f.remove(), 560);
+    },
+
     spawnSparkles(x, y, count, color, opts = {}) {
         for (let i = 0; i < count; i++) {
             const s = document.createElement('div');
-            s.className = 'spark';
+            s.className = opts.shard ? 'spark shard' : 'spark';
             const ang = opts.upward
                 ? (-Math.PI / 2 + (Math.random() - 0.5) * 1.7)
                 : (Math.random() * Math.PI * 2);
@@ -594,17 +674,27 @@ const App = {
 
         if (cardData.length === 0) return;
 
-        // Soft violet flash
-        const flash = document.createElement('div');
-        flash.className = 'stardust-flash';
-        document.body.appendChild(flash);
-        setTimeout(() => flash.remove(), 900);
+        const cx0 = window.innerWidth / 2, cy0 = window.innerHeight / 2;
 
-        // Dissolve each card into rising stardust
+        // Big violet supernova flash + camera quake
+        this.screenFlash(true);
+        this.screenQuake();
+
+        // Each card recoils inward, then blasts outward into shards
         cardData.forEach(cd => {
             const c = cd.el;
             const r = cd.rect;
+            const ccx = r.left + r.width / 2, ccy = r.top + r.height / 2;
+            // Outward direction from screen center (cards near center get a random push)
+            let dx = ccx - cx0, dy = ccy - cy0;
+            const len = Math.hypot(dx, dy) || 1;
+            const push = 320 + Math.random() * 220;
+            dx = (dx / len) * push;
+            dy = (dy / len) * push;
             c.style.transform = '';
+            c.style.setProperty('--ex', `${dx}px`);
+            c.style.setProperty('--ey', `${dy}px`);
+            c.style.setProperty('--er', `${(Math.random() - 0.5) * 720}deg`);
             Object.assign(c.style, {
                 position: 'fixed',
                 top: `${r.top}px`,
@@ -612,26 +702,32 @@ const App = {
                 width: `${r.width}px`,
                 height: `${r.height}px`,
                 margin: '0',
-                zIndex: '300',
+                zIndex: '320',
                 pointerEvents: 'none',
                 overflow: 'visible'
             });
             document.body.appendChild(c);
             c.getBoundingClientRect();
-            c.classList.add('stardust-out');
+            c.classList.add('blast-out');
 
-            // Rising stardust particles drawn from across the card face
-            const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-            this.spawnSparkles(cx, cy, 12, '#b58cff', {
-                upward: true, minDist: 50, spread: 120, scatter: Math.max(r.width, r.height)
+            // Shards exploding from each card
+            this.spawnSparkles(ccx, ccy, 14, '#d9b3ff', {
+                minDist: 60, spread: 200, shard: true, scatter: Math.max(r.width, r.height) * 0.6
             });
         });
+
+        // Central detonation burst + shockwave
+        this.spawnSparkles(cx0, cy0, 30, '#ffd700', { minDist: 90, spread: 360, shard: true });
+        const ring1 = document.createElement('div'); ring1.className = 'shock-ring';
+        const ring2 = document.createElement('div'); ring2.className = 'shock-ring delay';
+        document.body.append(ring1, ring2);
+        setTimeout(() => { ring1.remove(); ring2.remove(); }, 950);
 
         if (state.soundOn) AudioSys.playOneShot('dissolve');
         this.showToast(appData.translations[state.lang].msgCleared);
 
-        // Remove dissolved cards after animation
-        setTimeout(() => cardData.forEach(cd => cd.el.remove()), 1200);
+        // Remove blasted cards after animation
+        setTimeout(() => cardData.forEach(cd => cd.el.remove()), 1000);
     },
 
     renderHistory() {
@@ -833,6 +929,7 @@ ${state.lang === 'th' ? 'ตอบเป็นภาษาไทยทั้ง�
 
     showDetail(cardObj) {
         if (!cardObj) return;
+        this._detailCard = cardObj;
         const overlay = document.getElementById('card-detail-overlay');
         const imgEl = document.getElementById('detail-img');
         imgEl.classList.remove('loaded');

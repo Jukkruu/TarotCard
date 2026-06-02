@@ -2622,3 +2622,280 @@ textarea.mystic-input {
             inset 0 0 18px rgba(212, 175, 55, 0.15);
     }
 }
+
+/* ============================================================
+   ✦ AMPLIFIED EFFECTS — Quake · Flash · Vortex Pull · Supernova ✦
+   ============================================================ */
+
+/* Full-screen camera quake */
+.fx-quake {
+    animation: fxQuake 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes fxQuake {
+
+    0%,
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    10% {
+        transform: translate(-9px, 5px) rotate(-0.4deg);
+    }
+
+    20% {
+        transform: translate(11px, -7px) rotate(0.5deg);
+    }
+
+    30% {
+        transform: translate(-13px, 7px) rotate(-0.5deg);
+    }
+
+    40% {
+        transform: translate(12px, -5px) rotate(0.4deg);
+    }
+
+    50% {
+        transform: translate(-10px, 9px) rotate(-0.3deg);
+    }
+
+    60% {
+        transform: translate(9px, -9px) rotate(0.3deg);
+    }
+
+    70% {
+        transform: translate(-7px, 5px) rotate(-0.2deg);
+    }
+
+    80% {
+        transform: translate(6px, -4px) rotate(0.15deg);
+    }
+
+    90% {
+        transform: translate(-3px, 2px) rotate(0deg);
+    }
+}
+
+/* Blinding full-screen flash */
+.fx-flash {
+    position: fixed;
+    inset: 0;
+    z-index: 650;
+    pointer-events: none;
+    background: radial-gradient(circle at center,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(255, 215, 0, 0.55) 28%,
+            rgba(150, 110, 255, 0.25) 50%,
+            transparent 72%);
+    animation: fxFlash 0.55s ease-out forwards;
+}
+
+.fx-flash.violet {
+    background: radial-gradient(circle at center,
+            rgba(220, 200, 255, 0.95) 0%,
+            rgba(150, 110, 255, 0.6) 30%,
+            rgba(80, 40, 160, 0.25) 55%,
+            transparent 75%);
+}
+
+@keyframes fxFlash {
+    0% {
+        opacity: 0;
+    }
+
+    12% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+/* Converging energy rays that get sucked into the vortex */
+.vortex-rays {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 220vmax;
+    height: 220vmax;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 179;
+    mix-blend-mode: screen;
+    background: repeating-conic-gradient(from 0deg,
+            transparent 0deg 7deg,
+            rgba(212, 175, 55, 0.14) 7deg 8deg,
+            transparent 8deg 9deg,
+            rgba(180, 120, 255, 0.1) 9deg 10deg);
+    animation: rayPull 0.88s cubic-bezier(0.55, 0, 0.85, 0.3) forwards;
+}
+
+@keyframes rayPull {
+    0% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        opacity: 0;
+    }
+
+    25% {
+        opacity: 0.9;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(0.04) rotate(170deg);
+        opacity: 0;
+    }
+}
+
+/* Beefed-up galaxy core for the vortex */
+.galaxy-overlay.strong .galaxy-disc {
+    width: 760px;
+    height: 760px;
+    filter: blur(14px) brightness(1.4);
+}
+
+.galaxy-overlay.strong .galaxy-core {
+    width: 90px;
+    height: 90px;
+    box-shadow: 0 0 80px rgba(255, 215, 0, 1), 0 0 160px rgba(212, 175, 55, 0.6), 0 0 240px rgba(180, 120, 255, 0.4);
+}
+
+/* --- SUPERNOVA RESET — cards recoil then blast outward --- */
+.card-unit.blast-out {
+    animation: blastOut 0.8s cubic-bezier(0.2, 0.6, 0.2, 1) forwards !important;
+    pointer-events: none;
+    z-index: 320;
+}
+
+@keyframes blastOut {
+    0% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+        opacity: 1;
+        filter: brightness(1);
+    }
+
+    18% {
+        transform: translate(calc(var(--ex, 0px) * -0.07), calc(var(--ey, 0px) * -0.07)) scale(1.14);
+        opacity: 1;
+        filter: brightness(2.4) saturate(1.6);
+    }
+
+    100% {
+        transform: translate(var(--ex, 0px), var(--ey, 0px)) scale(0.28) rotate(var(--er, 360deg));
+        opacity: 0;
+        filter: brightness(3) blur(6px);
+    }
+}
+
+/* Bigger, longer-range sparks for the supernova/vortex bursts */
+.spark.shard {
+    width: var(--s, 6px);
+    height: var(--s, 6px);
+    box-shadow: 0 0 8px var(--spark-color, #ffd700);
+}
+
+/* --- Mobile-aware tuning for amplified FX --- */
+@media (max-width: 768px) {
+    .fx-quake {
+        animation-name: fxQuakeMobile;
+    }
+
+    @keyframes fxQuakeMobile {
+
+        0%,
+        100% {
+            transform: translate(0, 0);
+        }
+
+        20% {
+            transform: translate(-5px, 3px);
+        }
+
+        40% {
+            transform: translate(6px, -4px);
+        }
+
+        60% {
+            transform: translate(-5px, 4px);
+        }
+
+        80% {
+            transform: translate(4px, -2px);
+        }
+    }
+
+    .galaxy-overlay.strong .galaxy-disc {
+        width: 420px;
+        height: 420px;
+    }
+}
+
+/* ============================================================
+   ✦ TOP CONTROL BAR — Sound & Language (desktop + mobile) ✦
+   ============================================================ */
+.top-bar {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 160;
+    display: flex;
+    gap: 8px;
+    padding: 6px 8px;
+    align-items: center;
+}
+
+.icon-btn {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 12px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
+    border: 1px solid var(--glass-border);
+    color: var(--accent-gold);
+    border-radius: 12px;
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.icon-btn:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: #fff;
+    box-shadow: 0 0 14px var(--accent-gold);
+    transform: translateY(-2px);
+}
+
+.icon-btn:active {
+    transform: scale(0.9);
+    filter: brightness(1.3);
+}
+
+.icon-btn.muted {
+    color: #777;
+    border-color: rgba(120, 120, 120, 0.4);
+}
+
+@media (max-width: 768px) {
+    .top-bar {
+        top: 10px;
+        right: 10px;
+        gap: 6px;
+        padding: 0;
+    }
+
+    .icon-btn {
+        min-width: 40px;
+        height: 40px;
+        padding: 0 10px;
+        font-size: 0.85rem;
+        border-radius: 10px;
+        background: rgba(5, 2, 8, 0.78);
+        backdrop-filter: blur(10px);
+    }
+}
