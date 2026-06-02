@@ -629,6 +629,23 @@ button.action-btn:disabled {
     filter: sepia(0) contrast(1.2);
 }
 
+/* Reversed cards: flip the artwork upside-down (corners stay upright) */
+.card-unit.is-reversed .card-image-area img {
+    transform: rotate(180deg);
+}
+
+.card-unit.is-reversed:hover .card-image-area img {
+    transform: rotate(180deg) scale(1.05);
+}
+
+#detail-img.reversed-img {
+    transform: rotate(180deg);
+}
+
+.history-thumb.reversed {
+    transform: rotate(180deg);
+}
+
 .card-text-area {
     flex-grow: 1;
     display: flex;

@@ -611,7 +611,7 @@ const App = {
         // Render DOM — face-down card that flips to reveal
         const overlay = document.getElementById('reading-overlay');
         const el = document.createElement('div');
-        el.className = 'card-unit';
+        el.className = 'card-unit' + (isRev ? ' is-reversed' : '');
 
         const title = state.lang === 'th' ? cardObj.nameTH : cardObj.nameEN;
         const mean = state.lang === 'th' ? cardObj.mTH : cardObj.mEN;
@@ -621,7 +621,13 @@ const App = {
             <div class="card-flip">
                 <div class="flip-face flip-back"><div class="card-back-design"></div></div>
                 <div class="flip-face flip-front">
-                    <div class="card-image-area"><img src="${cardObj.img}"></div>
+                    <div class="card-image-area">
+                        <img src="${cardObj.img}">
+                        <span class="cu-corner tl"></span>
+                        <span class="cu-corner tr"></span>
+                        <span class="cu-corner bl"></span>
+                        <span class="cu-corner br"></span>
+                    </div>
                     <div class="card-text-area">
                         <h3 class="card-title">${title}</h3>
                         <div class="card-orientation ${isRev ? 'reversed' : 'upright'}">${orient}</div>
@@ -629,10 +635,6 @@ const App = {
                     </div>
                 </div>
             </div>
-            <span class="cu-corner tl"></span>
-            <span class="cu-corner tr"></span>
-            <span class="cu-corner bl"></span>
-            <span class="cu-corner br"></span>
         `;
         el.dataset.cardIndex = state.drawnCards.length - 1;
         overlay.appendChild(el);
@@ -897,7 +899,7 @@ const App = {
             const orientLabel = c.reversed ? (state.lang === 'th' ? 'กลับหัว' : 'Rev') : (state.lang === 'th' ? 'หัวตั้ง' : 'Up');
 
             li.innerHTML = `
-                <img src="${c.img}" class="history-thumb">
+                <img src="${c.img}" class="history-thumb${c.reversed ? ' reversed' : ''}">
                 <div class="history-info">
                     <span class="history-name">${name} <small style="color:#888;">(${orientLabel})</small></span>
                     <span class="history-meta">${mean}</span>
@@ -1069,6 +1071,7 @@ ${state.lang === 'th' ? 'ตอบเป็นภาษาไทยทั้ง�
         imgEl.classList.remove('loaded');
         imgEl.onload = () => imgEl.classList.add('loaded');
         imgEl.src = cardObj.img;
+        imgEl.classList.toggle('reversed-img', !!cardObj.reversed);
         document.getElementById('detail-title').textContent = state.lang === 'th' ? cardObj.nameTH : cardObj.nameEN;
 
         const orientEl = document.getElementById('detail-orient');
