@@ -48,6 +48,9 @@
     <div id="parallax-bg" class="parallax-layer"></div>
     <div id="stars-fg" class="parallax-layer"></div>
 
+    <!-- Sacred Geometry Mandala (Seed of Life) -->
+    <div id="mandala-bg" aria-hidden="true"></div>
+
     <!-- Ambient Vignette Glow -->
     <div id="vignette-glow" aria-hidden="true"></div>
 
@@ -63,6 +66,11 @@
     <header class="glass-header">
         <h1 id="app-title" class="glowing-text">Arcanum Aeterna</h1>
         <div id="app-subtitle" class="subtitle">The Master Mystic Tarot</div>
+        <div class="title-flourish" aria-hidden="true">
+            <i class="flourish-line"></i>
+            <span class="flourish-mark">✦ ❖ ✦</span>
+            <i class="flourish-line"></i>
+        </div>
     </header>
 
     <!-- Floating Action Bar -->
@@ -89,6 +97,10 @@
             <button class="card-detail-close" aria-label="Close">&times;</button>
             <div class="card-detail-image">
                 <img id="detail-img" src="" alt="Tarot Card">
+                <span class="cu-corner tl"></span>
+                <span class="cu-corner tr"></span>
+                <span class="cu-corner bl"></span>
+                <span class="cu-corner br"></span>
             </div>
             <div class="card-detail-info">
                 <h2 id="detail-title" class="card-detail-title"></h2>
@@ -139,6 +151,14 @@
 
             </div>
         </div>
+    </div>
+
+    <!-- Ornamental Gilded Frame -->
+    <div id="ornate-frame" aria-hidden="true">
+        <span class="frame-corner tl"></span>
+        <span class="frame-corner tr"></span>
+        <span class="frame-corner bl"></span>
+        <span class="frame-corner br"></span>
     </div>
 
     <script src="script.js"></script>

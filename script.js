@@ -496,6 +496,10 @@ const App = {
                 <div class="card-orientation ${isRev ? 'reversed' : 'upright'}">${orient}</div>
                 <div class="card-keywords">${mean}</div>
             </div>
+            <span class="cu-corner tl"></span>
+            <span class="cu-corner tr"></span>
+            <span class="cu-corner bl"></span>
+            <span class="cu-corner br"></span>
         `;
         el.dataset.cardIndex = state.drawnCards.length - 1;
         overlay.appendChild(el);
