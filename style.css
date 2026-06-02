@@ -609,11 +609,12 @@ button.action-btn:disabled {
 
 .card-image-area {
     width: 100%;
-    height: 65%;
+    height: 60%;
     background: #000;
     border-bottom: 2px solid var(--accent-gold);
     overflow: hidden;
     position: relative;
+    flex-shrink: 0;
 }
 
 .card-image-area img {
@@ -648,30 +649,45 @@ button.action-btn:disabled {
 
 .card-text-area {
     flex-grow: 1;
+    min-height: 0;
+    /* allow the flex child to shrink instead of overflowing */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 10px;
+    gap: 3px;
+    padding: 8px 10px;
     text-align: center;
+    overflow: hidden;
+    /* contain text so it never bleeds over the artwork */
     background: linear-gradient(to top, rgba(13, 4, 17, 0.95), rgba(26, 11, 46, 0.95));
 }
 
 .card-title {
     font-family: 'Cinzel Decorative', serif;
     color: var(--accent-gold);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     margin: 0;
     letter-spacing: 0.5px;
+    line-height: 1.15;
     text-shadow: 0 2px 4px #000;
+    /* clamp long bilingual names to 3 lines with ellipsis */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    max-width: 100%;
+    overflow-wrap: anywhere;
 }
 
 .card-orientation {
     font-family: 'Cormorant Garamond', serif;
     font-size: 0.75rem;
     text-transform: uppercase;
-    margin: 4px 0;
+    margin: 0;
     letter-spacing: 2px;
+    flex-shrink: 0;
 }
 
 .card-orientation.reversed {
@@ -685,10 +701,16 @@ button.action-btn:disabled {
 
 .card-keywords {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--accent-silver);
     font-style: italic;
     line-height: 1.2;
+    max-width: 100%;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 /* --- HISTORY MODAL (Polish) --- */
@@ -1840,7 +1862,7 @@ textarea.mystic-input {
     }
 
     .card-image-area {
-        height: 65%;
+        height: 58%;
     }
 
     .card-text-area {
