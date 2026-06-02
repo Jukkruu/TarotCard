@@ -195,6 +195,37 @@ const AudioSys = {
             gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
             osc.connect(gain); gain.connect(this.ctx.destination);
             osc.start(t); osc.stop(t + 0.8);
+        } else if (type === 'flip') {
+            // Card flip — a short filtered noise swish + a soft wooden thunk
+            const bufSize = this.ctx.sampleRate * 0.16;
+            const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                // fade the noise so it reads as a quick "whff"
+                data[i] = (Math.random() * 2 - 1) * (1 - i / bufSize);
+            }
+            const src = this.ctx.createBufferSource();
+            src.buffer = buf;
+            const bp = this.ctx.createBiquadFilter();
+            bp.type = 'bandpass';
+            bp.frequency.setValueAtTime(1800, t);
+            bp.frequency.exponentialRampToValueAtTime(600, t + 0.16);
+            bp.Q.value = 0.8;
+            const ng = this.ctx.createGain();
+            ng.gain.setValueAtTime(0.16, t);
+            ng.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+            src.connect(bp); bp.connect(ng); ng.connect(this.ctx.destination);
+            src.start(t); src.stop(t + 0.16);
+
+            // soft thunk as it lands
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(320, t + 0.06);
+            osc.frequency.exponentialRampToValueAtTime(150, t + 0.22);
+            gain.gain.setValueAtTime(0.0001, t + 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.05, t + 0.09);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.26);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(t + 0.06); osc.stop(t + 0.28);
         }
     }
 };
@@ -270,6 +301,7 @@ const App = {
     init() {
         Physics.init(); Physics.spawnCards();
         this.setupEvents(); this.updateUI();
+        this.spawnRunes();
 
         // Welcome modal dismiss
         document.getElementById('welcome-dismiss').addEventListener('click', () => {
@@ -360,11 +392,9 @@ const App = {
     },
 
     setupEvents() {
-        // Shuffle — Astral Vortex: cards spiral into a glowing galaxy core
+        // Shuffle — Oracle's Fan Flourish: cards gather, fan open, then sweep away
         document.getElementById('btn-shuffle').onclick = () => {
             this.showToast(appData.translations[state.lang].msgShuffle);
-
-            const vx = window.innerWidth / 2, vy = window.innerHeight / 2;
 
             // Measure positions BEFORE clearing
             const cardData = [...document.querySelectorAll('.card-unit')].map(c => ({
@@ -381,24 +411,28 @@ const App = {
             if (state.soundOn) AudioSys.playOneShot('shuffle');
 
             if (cardData.length > 0) {
-                // Converging energy rays + a powerful spinning galaxy core
-                const rays = document.createElement('div');
-                rays.className = 'vortex-rays';
-                document.body.appendChild(rays);
-                setTimeout(() => rays.remove(), 900);
+                // The all-seeing oracle sigil flares open at center
+                const sigil = document.createElement('div');
+                sigil.className = 'oracle-sigil';
+                sigil.innerHTML =
+                    '<div class="sig-ring r1"></div>' +
+                    '<div class="sig-ring r2"></div>' +
+                    '<div class="sig-ring r3"></div>' +
+                    '<div class="sig-ticks"></div>' +
+                    '<div class="sig-eye"></div>';
+                document.body.appendChild(sigil);
+                setTimeout(() => sigil.remove(), 1250);
 
-                const galaxy = document.createElement('div');
-                galaxy.className = 'galaxy-overlay strong';
-                galaxy.innerHTML = '<div class="galaxy-disc"></div><div class="galaxy-core"></div>';
-                document.body.appendChild(galaxy);
-                setTimeout(() => galaxy.remove(), 950);
-
-                cardData.forEach(cd => {
+                const gx0 = window.innerWidth / 2, gy0 = window.innerHeight * 0.46;
+                const n = cardData.length;
+                cardData.forEach((cd, i) => {
                     const c = cd.el, r = cd.rect;
                     const ccx = r.left + r.width / 2, ccy = r.top + r.height / 2;
+                    const mid = (i - (n - 1) / 2);
                     c.style.transform = '';
-                    c.style.setProperty('--vx', `${vx - ccx}px`);
-                    c.style.setProperty('--vy', `${vy - ccy}px`);
+                    c.style.setProperty('--gx', `${gx0 - ccx + mid * 7}px`);
+                    c.style.setProperty('--gy', `${gy0 - ccy}px`);
+                    c.style.setProperty('--fan', `${mid * 17}deg`);
                     Object.assign(c.style, {
                         position: 'fixed',
                         top: `${r.top}px`,
@@ -412,31 +446,23 @@ const App = {
                     });
                     document.body.appendChild(c);
                     c.getBoundingClientRect(); // force reflow
-                    c.classList.add('vortex-fly');
+                    c.classList.add('fan-flourish');
                 });
 
-                // Collapse: blinding flash, camera quake, triple shockwave, spark storm
+                // Shimmer + whoosh as the fan sweeps off
                 setTimeout(() => {
-                    this.screenQuake();
-                    this.screenFlash();
-                    const r1 = document.createElement('div'); r1.className = 'shock-ring';
-                    const r2 = document.createElement('div'); r2.className = 'shock-ring delay';
-                    const r3 = document.createElement('div'); r3.className = 'shock-ring';
-                    r3.style.animationDelay = '0.26s';
-                    document.body.append(r1, r2, r3);
-                    this.spawnSparkles(vx, vy, 44, '#ffd700', { minDist: 80, spread: 320, shard: true });
+                    this.spawnSparkles(gx0, gy0, 24, '#ffd700', { minDist: 50, spread: 230 });
                     if (state.soundOn) AudioSys.playOneShot('whoosh');
-                    setTimeout(() => { r1.remove(); r2.remove(); r3.remove(); }, 1000);
-                }, 700);
+                }, 680);
 
-                setTimeout(() => cardData.forEach(cd => cd.el.remove()), 950);
+                setTimeout(() => cardData.forEach(cd => cd.el.remove()), 1250);
             } else {
                 document.body.classList.add('shake-blur');
                 setTimeout(() => document.body.classList.remove('shake-blur'), 700);
             }
 
             Physics.shakeWorld();
-            setTimeout(() => this.showToast(appData.translations[state.lang].msgShuffled), 1100);
+            setTimeout(() => this.showToast(appData.translations[state.lang].msgShuffled), 1200);
             if (state.soundOn) AudioSys.updateBgMusic();
         };
 
@@ -602,6 +628,7 @@ const App = {
         // Flip reveal: let the card settle, flip it, then burst at the half-turn
         setTimeout(() => {
             el.classList.add('revealed');
+            AudioSys.playOneShot('flip');
             setTimeout(() => {
                 const r = el.getBoundingClientRect();
                 const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
@@ -622,12 +649,33 @@ const App = {
         setTimeout(() => b.remove(), 750);
     },
 
+    spawnRunes() {
+        const layer = document.getElementById('runes-layer');
+        if (!layer) return;
+        const glyphs = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓',
+            '☿', '♀', '♁', '♂', '♃', '♄', '☉', '☽', '✶', '✦', '⛤', '☥', '⚹'];
+        const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+        const count = touch ? 10 : 18;
+        for (let i = 0; i < count; i++) {
+            const r = document.createElement('span');
+            r.className = 'rune-float';
+            r.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+            r.style.left = `${Math.random() * 100}%`;
+            r.style.fontSize = `${14 + Math.random() * 26}px`;
+            r.style.setProperty('--dur', `${14 + Math.random() * 16}s`);
+            r.style.setProperty('--delay', `${-Math.random() * 20}s`);
+            r.style.setProperty('--drift', `${(Math.random() - 0.5) * 120}px`);
+            r.style.setProperty('--peak', `${0.12 + Math.random() * 0.22}`);
+            layer.appendChild(r);
+        }
+    },
+
     screenQuake() {
         document.body.classList.remove('fx-quake');
         void document.body.offsetWidth; // restart animation
         document.body.classList.add('fx-quake');
         clearTimeout(this._quakeTimer);
-        this._quakeTimer = setTimeout(() => document.body.classList.remove('fx-quake'), 560);
+        this._quakeTimer = setTimeout(() => document.body.classList.remove('fx-quake'), 720);
     },
 
     screenFlash(violet = false) {

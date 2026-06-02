@@ -2629,50 +2629,58 @@ textarea.mystic-input {
 
 /* Full-screen camera quake */
 .fx-quake {
-    animation: fxQuake 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    animation: fxQuake 0.7s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 @keyframes fxQuake {
 
     0%,
     100% {
-        transform: translate(0, 0) rotate(0deg);
+        transform: translate(0, 0) rotate(0deg) scale(1);
     }
 
-    10% {
-        transform: translate(-9px, 5px) rotate(-0.4deg);
+    6% {
+        transform: translate(-26px, 16px) rotate(-1.1deg) scale(1.025);
     }
 
-    20% {
-        transform: translate(11px, -7px) rotate(0.5deg);
+    13% {
+        transform: translate(30px, -22px) rotate(1.3deg) scale(1.02);
     }
 
-    30% {
-        transform: translate(-13px, 7px) rotate(-0.5deg);
+    21% {
+        transform: translate(-34px, 20px) rotate(-1.2deg) scale(1.03);
     }
 
-    40% {
-        transform: translate(12px, -5px) rotate(0.4deg);
+    29% {
+        transform: translate(32px, -16px) rotate(1deg) scale(1.015);
     }
 
-    50% {
-        transform: translate(-10px, 9px) rotate(-0.3deg);
+    37% {
+        transform: translate(-28px, 24px) rotate(-0.9deg) scale(1.02);
     }
 
-    60% {
-        transform: translate(9px, -9px) rotate(0.3deg);
+    45% {
+        transform: translate(26px, -22px) rotate(0.8deg) scale(1.01);
     }
 
-    70% {
-        transform: translate(-7px, 5px) rotate(-0.2deg);
+    54% {
+        transform: translate(-22px, 14px) rotate(-0.6deg) scale(1.01);
     }
 
-    80% {
-        transform: translate(6px, -4px) rotate(0.15deg);
+    63% {
+        transform: translate(18px, -14px) rotate(0.5deg) scale(1);
+    }
+
+    72% {
+        transform: translate(-13px, 9px) rotate(-0.35deg);
+    }
+
+    81% {
+        transform: translate(9px, -6px) rotate(0.2deg);
     }
 
     90% {
-        transform: translate(-3px, 2px) rotate(0deg);
+        transform: translate(-4px, 3px) rotate(0deg);
     }
 }
 
@@ -2804,23 +2812,31 @@ textarea.mystic-input {
 
         0%,
         100% {
-            transform: translate(0, 0);
+            transform: translate(0, 0) scale(1);
         }
 
-        20% {
-            transform: translate(-5px, 3px);
+        12% {
+            transform: translate(-15px, 9px) scale(1.02);
+        }
+
+        26% {
+            transform: translate(17px, -12px) scale(1.02);
         }
 
         40% {
-            transform: translate(6px, -4px);
+            transform: translate(-16px, 11px) scale(1.025);
         }
 
-        60% {
-            transform: translate(-5px, 4px);
+        55% {
+            transform: translate(13px, -9px) scale(1.01);
         }
 
-        80% {
-            transform: translate(4px, -2px);
+        70% {
+            transform: translate(-9px, 6px);
+        }
+
+        85% {
+            transform: translate(5px, -3px);
         }
     }
 
@@ -2897,5 +2913,245 @@ textarea.mystic-input {
         border-radius: 10px;
         background: rgba(5, 2, 8, 0.78);
         backdrop-filter: blur(10px);
+    }
+}
+/* ============================================================
+   ✦ ORACLE THEME — All-Seeing Eye · Fan Flourish · Runes ✦
+   ============================================================ */
+
+:root {
+    --oracle-eye: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23d4af37' stroke-width='2.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M50 6 L92 80 L8 80 Z'/%3E%3Cpath d='M28 58 Q50 42 72 58 Q50 74 28 58 Z'/%3E%3C/g%3E%3Ccircle cx='50' cy='58' r='7' fill='%23d4af37'/%3E%3Cg stroke='%23d4af37' stroke-width='2' stroke-linecap='round' opacity='0.8'%3E%3Cline x1='50' y1='82' x2='50' y2='94'/%3E%3Cline x1='30' y1='82' x2='25' y2='92'/%3E%3Cline x1='70' y1='82' x2='75' y2='92'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* --- All-Seeing Eye emblem in the header --- */
+.oracle-eye-emblem {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 6px;
+    background: var(--oracle-eye) no-repeat center / contain;
+    filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.6));
+    animation: emblemPulse 4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes emblemPulse {
+
+    0%,
+    100% {
+        opacity: 0.75;
+        filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.5));
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.9));
+        transform: scale(1.06);
+    }
+}
+
+/* --- DRIFTING RUNES AMBIANCE (whole-page oracle feel) --- */
+#runes-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.rune-float {
+    position: absolute;
+    bottom: -8%;
+    color: var(--accent-gold);
+    font-family: 'Cinzel Decorative', serif;
+    opacity: 0;
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+    animation: runeDrift var(--dur, 18s) var(--delay, 0s) infinite linear;
+    will-change: transform, opacity;
+}
+
+@keyframes runeDrift {
+    0% {
+        transform: translateY(0) translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+
+    12% {
+        opacity: var(--peak, 0.26);
+    }
+
+    50% {
+        transform: translateY(-55vh) translateX(var(--drift, 30px)) rotate(180deg);
+        opacity: var(--peak, 0.2);
+    }
+
+    88% {
+        opacity: 0.05;
+    }
+
+    100% {
+        transform: translateY(-112vh) translateX(calc(var(--drift, 30px) * -1)) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* --- ORACLE'S FAN FLOURISH (new Shuffle) --- */
+.card-unit.fan-flourish {
+    animation: fanFlourish 1.2s cubic-bezier(0.4, 0.05, 0.25, 1) forwards !important;
+    transform-origin: 50% 140%;
+    z-index: 320;
+    pointer-events: none;
+}
+
+@keyframes fanFlourish {
+    0% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+        opacity: 1;
+        filter: brightness(1);
+    }
+
+    26% {
+        transform: translate(var(--gx, 0px), var(--gy, 0px)) rotate(0deg) scale(1.05);
+        opacity: 1;
+        filter: brightness(1.35);
+    }
+
+    50% {
+        transform: translate(var(--gx, 0px), var(--gy, 0px)) rotate(var(--fan, 0deg)) scale(1.05);
+        filter: brightness(1.4);
+    }
+
+    66% {
+        transform: translate(var(--gx, 0px), var(--gy, 0px)) rotate(var(--fan, 0deg)) scale(1.05);
+        filter: brightness(1.6) saturate(1.3);
+    }
+
+    100% {
+        transform: translate(calc(var(--gx, 0px) + 72vw), calc(var(--gy, 0px) - 26vh)) rotate(calc(var(--fan, 0deg) + 95deg)) scale(0.22);
+        opacity: 0;
+        filter: brightness(2) blur(4px);
+    }
+}
+
+/* --- ORACLE SIGIL (shuffle centerpiece) --- */
+.oracle-sigil {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 360px;
+    height: 360px;
+    transform: translate(-50%, -50%);
+    z-index: 185;
+    pointer-events: none;
+    animation: sigilPulse 1.2s ease-out forwards;
+}
+
+.oracle-sigil .sig-ring {
+    position: absolute;
+    border-radius: 50%;
+}
+
+.oracle-sigil .r1 {
+    inset: 0;
+    border: 2px dashed rgba(212, 175, 55, 0.6);
+    box-shadow: 0 0 28px rgba(212, 175, 55, 0.35), inset 0 0 28px rgba(212, 175, 55, 0.15);
+    animation: sigSpin 7s linear infinite;
+}
+
+.oracle-sigil .r2 {
+    inset: 42px;
+    border: 1px solid rgba(180, 120, 255, 0.55);
+    animation: sigSpin 5s linear infinite reverse;
+}
+
+.oracle-sigil .r3 {
+    inset: 78px;
+    border: 1px solid rgba(212, 175, 55, 0.35);
+}
+
+.oracle-sigil .sig-ticks {
+    position: absolute;
+    inset: 16px;
+    border-radius: 50%;
+    background: repeating-conic-gradient(from 0deg, rgba(212, 175, 55, 0.45) 0deg 1.2deg, transparent 1.2deg 15deg);
+    animation: sigSpin 13s linear infinite;
+    -webkit-mask: radial-gradient(transparent 58%, #000 60%);
+    mask: radial-gradient(transparent 58%, #000 60%);
+}
+
+.oracle-sigil .sig-eye {
+    position: absolute;
+    inset: 0;
+    background: var(--oracle-eye) no-repeat center / 130px 130px;
+    filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.8));
+    animation: eyeFlash 1.2s ease-out forwards;
+}
+
+@keyframes sigSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes sigilPulse {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.35);
+    }
+
+    22% {
+        opacity: 1;
+    }
+
+    70% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.32);
+    }
+}
+
+@keyframes eyeFlash {
+    0% {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+
+    30% {
+        opacity: 1;
+        transform: scale(1.12);
+    }
+
+    100% {
+        opacity: 0.7;
+        transform: scale(1);
+    }
+}
+
+@media (max-width: 768px) {
+    .oracle-eye-emblem {
+        width: 38px;
+        height: 38px;
+        margin-bottom: 3px;
+    }
+
+    .oracle-sigil {
+        width: 240px;
+        height: 240px;
+    }
+
+    .oracle-sigil .r2 {
+        inset: 28px;
+    }
+
+    .oracle-sigil .r3 {
+        inset: 52px;
+    }
+
+    .oracle-sigil .sig-eye {
+        background-size: 88px 88px;
     }
 }
