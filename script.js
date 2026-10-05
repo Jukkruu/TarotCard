@@ -196,6 +196,31 @@ const AudioSys = {
             gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
             osc.connect(gain); gain.connect(this.ctx.destination);
             osc.start(t); osc.stop(t + 0.8);
+        } else if (type === 'riffle') {
+            // Rapid card-flick burst — simulates a riffle shuffle
+            const FLICKS = 11;
+            for (let i = 0; i < FLICKS; i++) {
+                const delay = i * 0.058 + Math.random() * 0.014;
+                const bufSz = Math.ceil(this.ctx.sampleRate * 0.052);
+                const rbuf = this.ctx.createBuffer(1, bufSz, this.ctx.sampleRate);
+                const rd = rbuf.getChannelData(0);
+                for (let j = 0; j < bufSz; j++) {
+                    rd[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / bufSz, 1.6);
+                }
+                const rsrc = this.ctx.createBufferSource();
+                rsrc.buffer = rbuf;
+                const rbp = this.ctx.createBiquadFilter();
+                rbp.type = 'bandpass';
+                rbp.frequency.value = 1200 + Math.random() * 700;
+                rbp.Q.value = 1.0;
+                const rg = this.ctx.createGain();
+                rg.gain.setValueAtTime(0.0001, t + delay);
+                rg.gain.exponentialRampToValueAtTime(0.13, t + delay + 0.006);
+                rg.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.052);
+                rsrc.connect(rbp); rbp.connect(rg); rg.connect(this.ctx.destination);
+                rsrc.start(t + delay);
+                rsrc.stop(t + delay + 0.068);
+            }
         } else if (type === 'flip') {
             // Card flip — a short filtered noise swish + a soft wooden thunk
             const bufSize = this.ctx.sampleRate * 0.16;
@@ -305,6 +330,7 @@ const App = {
         this.setupEvents(); this.updateUI();
         this.spawnRunes();
         this.spawnShootingStars();
+        this.preloadImages();
         this.setupKeyboard();
 
         // Skip the welcome modal on return visits
@@ -403,77 +429,43 @@ const App = {
     },
 
     setupEvents() {
-        // Shuffle — Oracle's Fan Flourish: cards gather, fan open, then sweep away
+        // Shuffle — Riffle deck animation
         document.getElementById('btn-shuffle').onclick = () => {
             this.showToast(appData.translations[state.lang].msgShuffle);
 
-            // Measure positions BEFORE clearing
-            const cardData = [...document.querySelectorAll('.card-unit')].map(c => ({
-                el: c,
-                rect: c.getBoundingClientRect()
-            }));
+            const drawnEls = [...document.querySelectorAll('#reading-overlay .card-unit')];
+            const cx = window.innerWidth / 2, cy = window.innerHeight * 0.44;
 
-            // Reset physics & overlay IMMEDIATELY
-            state.drawnCards = []; state.drawnBodies = [];
-            document.getElementById('reading-overlay').innerHTML = '';
-            Physics.spawnCards();
-            this.updateCardCount();
-
-            if (state.soundOn) AudioSys.playOneShot('shuffle');
-
-            if (cardData.length > 0) {
-                // The all-seeing oracle sigil flares open at center
-                const sigil = document.createElement('div');
-                sigil.className = 'oracle-sigil';
-                sigil.innerHTML =
-                    '<div class="sig-ring r1"></div>' +
-                    '<div class="sig-ring r2"></div>' +
-                    '<div class="sig-ring r3"></div>' +
-                    '<div class="sig-ticks"></div>' +
-                    '<div class="sig-eye"></div>';
-                document.body.appendChild(sigil);
-                setTimeout(() => sigil.remove(), 1250);
-
-                const gx0 = window.innerWidth / 2, gy0 = window.innerHeight * 0.46;
-                const n = cardData.length;
-                cardData.forEach((cd, i) => {
-                    const c = cd.el, r = cd.rect;
-                    const ccx = r.left + r.width / 2, ccy = r.top + r.height / 2;
-                    const mid = (i - (n - 1) / 2);
-                    c.style.transform = '';
-                    c.style.setProperty('--gx', `${gx0 - ccx + mid * 7}px`);
-                    c.style.setProperty('--gy', `${gy0 - ccy}px`);
-                    c.style.setProperty('--fan', `${mid * 17}deg`);
-                    Object.assign(c.style, {
-                        position: 'fixed',
-                        top: `${r.top}px`,
-                        left: `${r.left}px`,
-                        width: `${r.width}px`,
-                        height: `${r.height}px`,
-                        margin: '0',
-                        zIndex: '320',
-                        pointerEvents: 'none',
-                        overflow: 'visible'
-                    });
-                    document.body.appendChild(c);
-                    c.getBoundingClientRect(); // force reflow
-                    c.classList.add('fan-flourish');
+            if (drawnEls.length > 0) {
+                // Shrink drawn cards toward center before riffle begins
+                drawnEls.forEach(c => {
+                    const r = c.getBoundingClientRect();
+                    const dx = cx - (r.left + r.width / 2);
+                    const dy = cy - (r.top + r.height / 2);
+                    c.style.transition = 'transform 0.22s ease-in, opacity 0.22s ease-in';
+                    c.style.transform = `translate(${dx}px,${dy}px) scale(0.1) rotate(${(Math.random() - 0.5) * 200}deg)`;
+                    c.style.opacity = '0';
+                    c.style.pointerEvents = 'none';
                 });
-
-                // Shimmer + whoosh as the fan sweeps off
-                setTimeout(() => {
-                    this.spawnSparkles(gx0, gy0, 24, '#ffd700', { minDist: 50, spread: 230 });
-                    if (state.soundOn) AudioSys.playOneShot('whoosh');
-                }, 680);
-
-                setTimeout(() => cardData.forEach(cd => cd.el.remove()), 1250);
             } else {
                 document.body.classList.add('shake-blur');
                 setTimeout(() => document.body.classList.remove('shake-blur'), 700);
             }
 
-            Physics.shakeWorld();
-            setTimeout(() => this.showToast(appData.translations[state.lang].msgShuffled), 1200);
+            // Reset state after cards fade
+            setTimeout(() => {
+                state.drawnCards = []; state.drawnBodies = [];
+                document.getElementById('reading-overlay').innerHTML = '';
+                Physics.spawnCards();
+                this.updateCardCount();
+                Physics.shakeWorld();
+            }, drawnEls.length > 0 ? 220 : 0);
+
+            // Riffle animation
+            this.showRiffleShuffle(() => {
+                setTimeout(() => this.showToast(appData.translations[state.lang].msgShuffled), 100);
+            });
+
             if (state.soundOn) AudioSys.updateBgMusic();
         };
 
@@ -609,6 +601,9 @@ const App = {
         state.drawnBodies.push(body); state.drawnCards.push(cardObj);
         Matter.Body.setPosition(body, { x: -9999, y: -9999 }); Matter.Body.setStatic(body, true);
 
+        // Start fetching the card image now while the card is still face-down
+        const _preImg = new Image(); _preImg.src = cardObj.img;
+
         // Render DOM — face-down card that flips to reveal
         const overlay = document.getElementById('reading-overlay');
         const el = document.createElement('div');
@@ -623,7 +618,7 @@ const App = {
                 <div class="flip-face flip-back"><div class="card-back-design"></div></div>
                 <div class="flip-face flip-front">
                     <div class="card-image-area">
-                        <img src="${cardObj.img}">
+                        <img src="${cardObj.img}" loading="eager" decoding="async" fetchpriority="high">
                         <span class="cu-corner tl"></span>
                         <span class="cu-corner tr"></span>
                         <span class="cu-corner bl"></span>
@@ -795,6 +790,100 @@ const App = {
             setTimeout(spawn, 5000 + Math.random() * 10000);
         };
         setTimeout(spawn, 3000 + Math.random() * 4000);
+    },
+
+    showRiffleShuffle(onDone) {
+        const N = 12;
+        const cx = window.innerWidth / 2, cy = window.innerHeight * 0.44;
+
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:fixed;inset:0;z-index:410;pointer-events:none;overflow:hidden;';
+        document.body.appendChild(wrap);
+
+        // Build deck pile
+        const rcards = [];
+        for (let i = 0; i < N; i++) {
+            const rc = document.createElement('div');
+            rc.className = 'riffle-card';
+            rc.textContent = '✦';
+            rc.style.cssText = `left:${cx}px;top:${cy}px;opacity:0;transform:translate(-50%,-50%) translateY(${-i * 1.4}px) scale(0.45);`;
+            wrap.appendChild(rc);
+            rcards.push(rc);
+        }
+
+        // Phase 1: Stack entrance (cards deal in staggered)
+        requestAnimationFrame(() => {
+            rcards.forEach((rc, i) => {
+                setTimeout(() => {
+                    rc.style.transition = 'transform 0.28s cubic-bezier(0.34,1.56,0.64,1), opacity 0.18s ease';
+                    rc.style.opacity = '1';
+                    rc.style.transform = `translate(-50%,-50%) translateY(${-i * 1.4}px) rotate(${(Math.random() - 0.5) * 1.2}deg)`;
+                }, i * 14);
+            });
+        });
+
+        const half = Math.floor(N / 2);
+
+        // Phase 2: Split deck left/right (at 260ms)
+        setTimeout(() => {
+            if (state.soundOn) AudioSys.playOneShot('shuffle');
+            rcards.forEach((rc, i) => {
+                rc.style.transition = 'transform 0.30s cubic-bezier(0.4,0,0.2,1)';
+                if (i < half) {
+                    rc.style.transform = `translate(-50%,-50%) translateX(-74px) translateY(${-i * 1.8}px) rotate(${-7 - i * 0.7}deg)`;
+                } else {
+                    const j = i - half;
+                    rc.style.transform = `translate(-50%,-50%) translateX(74px) translateY(${-j * 1.8}px) rotate(${7 + j * 0.7}deg)`;
+                }
+            });
+        }, 260);
+
+        // Phase 3: Riffle interleave (at 620ms)
+        const order = [];
+        let li = 0, ri = half;
+        while (li < half || ri < N) {
+            if (li < half && (ri >= N || Math.random() > 0.42)) order.push(li++);
+            else order.push(ri++);
+        }
+
+        if (state.soundOn) setTimeout(() => AudioSys.playOneShot('riffle'), 615);
+
+        order.forEach((ci, k) => {
+            setTimeout(() => {
+                rcards[ci].style.transition = 'transform 0.09s ease-in';
+                rcards[ci].style.transform = `translate(-50%,-50%) translateY(${-k * 1.6}px) rotate(${(Math.random() - 0.5) * 1.4}deg)`;
+            }, 620 + k * 52);
+        });
+
+        const riffleDone = 620 + N * 52;
+
+        // Phase 4: Scatter + sparkle burst
+        setTimeout(() => {
+            this.screenFlash();
+            this.spawnSparkles(cx, cy, 22, '#ffd700', { shard: true, spread: 200, minDist: 55 });
+            if (state.soundOn) AudioSys.playOneShot('whoosh');
+            rcards.forEach((rc, i) => {
+                const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.7;
+                const dist = 120 + Math.random() * 200;
+                rc.style.transition = 'transform 0.55s cubic-bezier(0.2,0.6,0.3,1), opacity 0.45s ease';
+                rc.style.transform = `translate(-50%,-50%) translate(${Math.cos(ang) * dist}px,${Math.sin(ang) * dist}px) rotate(${(Math.random() - 0.5) * 540}deg) scale(0.05)`;
+                rc.style.opacity = '0';
+            });
+            setTimeout(() => wrap.remove(), 620);
+            if (onDone) onDone();
+        }, riffleDone + 100);
+    },
+
+    preloadImages() {
+        const deck = [...fullDeck];
+        let i = 0;
+        const BATCH = 8;
+        const load = () => {
+            deck.slice(i, i + BATCH).forEach(c => { (new Image()).src = c.img; });
+            i += BATCH;
+            if (i < deck.length) setTimeout(load, 350);
+        };
+        setTimeout(load, 1200);
     },
 
     screenQuake() {
