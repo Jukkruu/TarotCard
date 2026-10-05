@@ -304,6 +304,7 @@ const App = {
         Physics.init(); Physics.spawnCards();
         this.setupEvents(); this.updateUI();
         this.spawnRunes();
+        this.spawnShootingStars();
         this.setupKeyboard();
 
         // Skip the welcome modal on return visits
@@ -741,21 +742,59 @@ const App = {
         const layer = document.getElementById('runes-layer');
         if (!layer) return;
         const glyphs = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓',
-            '☿', '♀', '♁', '♂', '♃', '♄', '☉', '☽', '✶', '✦', '⛤', '☥', '⚹'];
+            '☿', '♀', '♁', '♂', '♃', '♄', '☉', '☽', '✶', '✦', '⛤', '☥', '⚹',
+            '🜁', '🜂', '🜃', '🜄', '⚶', '⚷', '⚸', '⚻', '⚼', '⯑', '⯒'];
+        const runeColors = [
+            'rgba(212,175,55,VAR)',   // gold
+            'rgba(180,120,255,VAR)',  // violet
+            'rgba(70,200,230,VAR)',   // teal
+            'rgba(220,200,255,VAR)',  // pale lavender
+            'rgba(255,160,80,VAR)',   // amber
+        ];
         const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-        const count = touch ? 22 : 40;
+        const count = touch ? 22 : 44;
         for (let i = 0; i < count; i++) {
             const r = document.createElement('span');
             r.className = 'rune-float';
             r.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
             r.style.left = `${Math.random() * 100}%`;
-            r.style.fontSize = `${14 + Math.random() * 26}px`;
-            r.style.setProperty('--dur', `${14 + Math.random() * 16}s`);
-            r.style.setProperty('--delay', `${-Math.random() * 20}s`);
-            r.style.setProperty('--drift', `${(Math.random() - 0.5) * 120}px`);
-            r.style.setProperty('--peak', `${0.12 + Math.random() * 0.22}`);
+            r.style.fontSize = `${12 + Math.random() * 28}px`;
+            r.style.setProperty('--dur', `${13 + Math.random() * 18}s`);
+            r.style.setProperty('--delay', `${-Math.random() * 24}s`);
+            r.style.setProperty('--drift', `${(Math.random() - 0.5) * 130}px`);
+            const peak = 0.12 + Math.random() * 0.28;
+            r.style.setProperty('--peak', `${peak}`);
+            const col = runeColors[Math.floor(Math.random() * runeColors.length)]
+                .replace('VAR', peak.toFixed(2));
+            r.style.color = col;
+            r.style.textShadow = `0 0 8px ${col}`;
             layer.appendChild(r);
         }
+    },
+
+    spawnShootingStars() {
+        const spawn = () => {
+            if (document.hidden) return;
+            const s = document.createElement('div');
+            s.className = 'shooting-star';
+            const ang = -(18 + Math.random() * 22);
+            const startX = Math.random() * 80;
+            const startY = Math.random() * 35;
+            const travelX = 28 + Math.random() * 44;
+            const travelY = 12 + Math.random() * 22;
+            const len = 70 + Math.random() * 130;
+            s.style.width = `${len}px`;
+            s.style.setProperty('--sx', `${startX}vw`);
+            s.style.setProperty('--sy', `${startY}vh`);
+            s.style.setProperty('--dx', `${travelX}vw`);
+            s.style.setProperty('--dy', `${travelY}vh`);
+            s.style.setProperty('--ang', `${ang}deg`);
+            s.style.setProperty('--dur', `${0.7 + Math.random() * 0.7}s`);
+            document.body.appendChild(s);
+            setTimeout(() => s.remove(), 2000);
+            setTimeout(spawn, 5000 + Math.random() * 10000);
+        };
+        setTimeout(spawn, 3000 + Math.random() * 4000);
     },
 
     screenQuake() {
@@ -917,35 +956,7 @@ const App = {
         navigator.clipboard.writeText(txt).then(() => this.showToast("Card copied!"));
     },
 
-    _copyToAI_removed() { // dead code removed
-        if (state.drawnCards.length === 0) {
-            this.showToast(appData.translations[state.lang].msgNoDraw);
-            return;
-        }
-        const topic = document.getElementById('ai-topic').value;
-        const sit = document.getElementById('ai-situation').value;
-
-        let prompt;
-        if (state.lang === 'th') {
-            const cards = state.drawnCards.map((c, i) => `${i + 1}. ${c.nameTH} (${c.reversed ? 'กลับหัว' : 'หัวตั้ง'})`).join(', ');
-            prompt = `รับบทเป็นหมอดูไพ่ทาโรต์ผู้เชี่ยวชาญ ทำนายดวงชะตาจากไพ่ที่จับได้:
-ไพ่ที่ได้: ${cards}
-หัวข้อ: ${topic}
-สถานการณ์: ${sit || 'ไม่ระบุ'}
-ขอ: 1.ความหมายแต่ละใบ 2.ความเชื่อมโยง 3.คำแนะนำ — ภาษาไทยกันเอง`;
-        } else {
-            const cards = state.drawnCards.map((c, i) => `${i + 1}. ${c.nameEN} (${c.reversed ? 'Reversed' : 'Upright'})`).join(', ');
-            prompt = `You are a wise tarot oracle. Read these cards:
-Cards: ${cards}
-Topic: ${topic}
-Situation: ${sit || 'Not specified'}
-Provide: 1. Individual meanings 2. Story connecting them 3. Actionable advice. Warm, mystical tone.`;
-        }
-
-        navigator.clipboard.writeText(prompt).then(() => this.showToast(appData.translations[state.lang].copied));
-    },
-
-    async askOracle() {
+    askOracle() {
         if (state.drawnCards.length === 0) {
             this.showToast(state.lang === 'th' ? 'กรุณาเปิดไพ่ก่อน' : 'Draw cards first!');
             return;
@@ -953,17 +964,8 @@ Provide: 1. Individual meanings 2. Story connecting them 3. Actionable advice. W
 
         const topic = document.getElementById('ai-topic').value;
         const sit = document.getElementById('ai-situation').value;
-        const loadingEl = document.getElementById('ai-loading');
         const responseEl = document.getElementById('ai-response');
-        const readBtn = document.getElementById('btn-ai-read');
 
-        // Show loading, hide previous response
-        loadingEl.style.display = 'flex';
-        responseEl.style.display = 'none';
-        readBtn.disabled = true;
-        readBtn.textContent = '⏳ Reading...';
-
-        // Build card descriptions
         const cardDescs = state.drawnCards.map((c, i) => {
             const name = `${c.nameEN} / ${c.nameTH}`;
             const orient = c.reversed ? 'Reversed (กลับหัว)' : 'Upright (หัวตั้ง)';
@@ -990,67 +992,52 @@ Please provide a reading in ${lang} with:
 Use a warm, mystical tone. Keep it concise but meaningful (under 500 words). Use emojis sparingly for section headers.
 ${state.lang === 'th' ? 'ตอบเป็นภาษาไทยทั้งหมด ใช้ภาษาที่สละสลวย เป็นกันเอง เข้าใจง่าย' : ''}`;
 
-        try {
-            const API_KEY = 'AIzaSyDRc-i1GdwfVatlPOTk1_ZKLJ8EkrjAxAg';
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${API_KEY}`;
-            const body = JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    temperature: 0.9,
-                    maxOutputTokens: 1024
-                }
+        // Build prompt display
+        const isTH = state.lang === 'th';
+        const header = document.createElement('div');
+        header.className = 'ai-prompt-header';
+
+        const label = document.createElement('span');
+        label.textContent = isTH ? '✦ พร้อมวางใน AI ของคุณ' : '✦ Ready for your AI oracle';
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-prompt-btn';
+        copyBtn.textContent = '📋 ' + (isTH ? 'คัดลอก' : 'Copy');
+        copyBtn.onclick = () => {
+            navigator.clipboard.writeText(prompt).then(() => {
+                copyBtn.textContent = '✓ ' + (isTH ? 'คัดลอกแล้ว!' : 'Copied!');
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 ' + (isTH ? 'คัดลอก' : 'Copy');
+                }, 2200);
+            }).catch(() => {
+                copyBtn.textContent = isTH ? 'เลือกข้อความด้านล่าง' : 'Select text below';
             });
+        };
 
-            // Retry logic for rate limits (429)
-            let res, retries = 0;
-            const maxRetries = 3;
-            while (retries <= maxRetries) {
-                res = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body
-                });
-                if (res.status === 429 && retries < maxRetries) {
-                    retries++;
-                    const waitSec = retries * 3;
-                    loadingEl.querySelector('span').textContent = `Rate limited — retrying in ${waitSec}s... (${retries}/${maxRetries})`;
-                    await new Promise(r => setTimeout(r, waitSec * 1000));
-                    continue;
-                }
-                break;
-            }
+        header.appendChild(label);
+        header.appendChild(copyBtn);
 
-            if (!res.ok) {
-                const errBody = await res.text().catch(() => '');
-                throw new Error(res.status === 429
-                    ? (state.lang === 'th' ? 'กรุณารอสักครู่แล้วลองใหม่' : 'Too many requests — please wait a moment and try again')
-                    : `API error ${res.status}`);
-            }
+        const instr = document.createElement('div');
+        instr.className = 'ai-prompt-instructions';
+        instr.textContent = isTH
+            ? 'วางข้อความนี้ใน ChatGPT, Claude, Gemini หรือ AI ใดก็ได้ เพื่อรับคำทำนาย'
+            : 'Paste into ChatGPT, Claude, Gemini, or any AI to receive your reading';
 
-            const data = await res.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const pre = document.createElement('pre');
+        pre.className = 'ai-prompt-text';
+        pre.textContent = prompt;
 
-            if (!text) throw new Error('Empty response');
+        responseEl.innerHTML = '';
+        responseEl.appendChild(header);
+        responseEl.appendChild(instr);
+        responseEl.appendChild(pre);
+        responseEl.style.display = 'block';
+        responseEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-            // Basic markdown to HTML
-            const formatted = text
-                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                .replace(/### (.+)/g, '<h4>$1</h4>')
-                .replace(/## (.+)/g, '<h3>$1</h3>')
-                .replace(/\n/g, '<br>');
-
-            responseEl.innerHTML = formatted;
-            responseEl.style.display = 'block';
-            responseEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-        } catch (err) {
-            responseEl.innerHTML = `<span style="color: #e74c3c;">⚠️ ${state.lang === 'th' ? 'เกิดข้อผิดพลาด' : 'Oracle Error'}: ${err.message}</span>`;
-            responseEl.style.display = 'block';
-        } finally {
-            loadingEl.style.display = 'none';
-            readBtn.disabled = false;
-            readBtn.textContent = '🔮 Read My Cards';
-        }
+        // Auto-copy on button press
+        navigator.clipboard.writeText(prompt).then(() => {
+            this.showToast(isTH ? '✦ คัดลอกแล้ว — วางใน AI ของคุณ' : '✦ Copied — paste into your AI oracle');
+        }).catch(() => {});
     },
 
     showToast(msg) {
